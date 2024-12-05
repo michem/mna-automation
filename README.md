@@ -14,27 +14,27 @@ M&A are complex processes that require careful planning, execution, and evaluati
     cd mna-automation
     ```
 
-- Install `uv`
+- Create a virtual environment using `venv`
     ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    python3.11 -m venv mna
+    source mna/bin/activate
     ```
 
-- Create a virtual environment
+- Alternatively, use `mamba` to create the virtual environment
     ```bash
-    uv venv --python=3.11
-    source .venv/bin/activate
+    mamba env create -n mna python=3.11
+    maamba activate mna
     ```
 
-- Sync up the dependencies
+- Install the required dependencies
     ```bash
-    uv sync
+    pip install -r requirements.txt
     ```
 
 ## Project Structure
 
 ```bash
 mna/
-├── pyproject.toml
 ├── .env
 └── mna/
     ├── __init__.py
