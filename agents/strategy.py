@@ -303,21 +303,18 @@ class StrategyAgent(BaseModel):
     ) -> StrategyContext:
         print("\nLet's address your requested improvements.")
 
-        # Update company profile if needed
         if any(
             keyword in improvements.lower()
             for keyword in ["company", "industry", "size", "business"]
         ):
             context.company_profile = self._gather_company_profile_conversational()
 
-        # Update objectives if needed
         if any(
             keyword in improvements.lower()
             for keyword in ["objective", "goal", "timeline", "budget"]
         ):
             context.objectives = self._gather_objectives_conversational()
 
-        # Update target criteria if needed
         if any(
             keyword in improvements.lower()
             for keyword in ["target", "criteria", "revenue", "region"]
@@ -352,7 +349,6 @@ class StrategyAgent(BaseModel):
     def _generate_prompt(self, context: StrategyContext) -> str:
         framework = self.config["strategy_framework"]
 
-        # Only include populated fields in the prompt
         company_info = []
         if context.company_profile.industry:
             company_info.append(f"Industry: {context.company_profile.industry}")
