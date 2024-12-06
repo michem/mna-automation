@@ -1,0 +1,139 @@
+# config/strategy.yaml
+
+agent:
+  role: "Strategy Development Lead"
+  goal: "Develop comprehensive M&A strategies aligned with business objectives"
+  backstory: |
+    You are a senior M&A Strategy expert with deep experience in developing acquisition 
+    strategies across industries. You excel at understanding business objectives, market 
+    dynamics, and creating actionable acquisition plans. Your communication style is 
+    conversational and adaptable, focusing on gathering essential information while 
+    maintaining a natural dialogue flow.
+
+input_validation:
+  company_profile:
+    industry:
+      description: "Primary industry sector of the company"
+      examples:
+        ["Technology", "Healthcare", "Manufacturing", "Financial Services"]
+    size:
+      description: "Company size category"
+      valid_options: ["Startup", "SME", "Enterprise"]
+    growth_stage:
+      description: "Current growth stage of the company"
+      valid_options: ["Early", "Growth", "Mature", "Decline"]
+
+  acquisition_objectives:
+    primary_objectives:
+      - "Market expansion"
+      - "Technology acquisition"
+      - "Vertical integration"
+      - "Horizontal integration"
+      - "Talent acquisition"
+      - "Product line extension"
+    timeline_ranges:
+      - "0-6 months"
+      - "6-12 months"
+      - "12-18 months"
+      - "18+ months"
+    budget_ranges:
+      examples: ["$10M-$50M", "$50M-$200M", "$200M+"]
+
+strategy_framework:
+  analysis_components:
+    market_assessment:
+      - Market size and growth potential
+      - Competitive landscape
+      - Entry barriers
+      - Regulatory environment
+
+    synergy_evaluation:
+      - Revenue synergies
+      - Cost synergies
+      - Operational synergies
+      - Strategic synergies
+
+    risk_factors:
+      - Market risks
+      - Operational risks
+      - Financial risks
+      - Integration risks
+      - Regulatory risks
+      - Cultural risks
+
+  success_metrics:
+    financial:
+      - Revenue growth
+      - Cost savings
+      - EBITDA improvement
+      - ROI targets
+    operational:
+      - Integration milestones
+      - Market share gains
+      - Customer retention
+      - Employee retention
+    strategic:
+      - Technology integration
+      - Market position
+      - Product portfolio expansion
+      - Geographic presence
+
+output_structure:
+  sections:
+    - title: "Executive Summary"
+      required: true
+      key_components:
+        - Strategic rationale
+        - Key recommendations
+        - Critical success factors
+
+    - title: "Strategic Analysis"
+      required: true
+      key_components:
+        - Market opportunity assessment
+        - Competitive positioning
+        - Synergy potential
+
+    - title: "Target Criteria"
+      required: true
+      key_components:
+        - Ideal company profile
+        - Must-have characteristics
+        - Deal breakers
+
+    - title: "Risk Assessment"
+      required: true
+      key_components:
+        - Risk identification
+        - Mitigation strategies
+        - Contingency plans
+
+    - title: "Implementation Plan"
+      required: true
+      key_components:
+        - Timeline
+        - Key milestones
+        - Resource requirements
+        - Success metrics
+
+conversation_prompts:
+  company_profile:
+    intro: "Let's start by understanding your company."
+    industry: "What industry are you in?"
+    size: "How would you categorize your company's size?"
+    business: "Could you tell me about your core business?"
+
+  objectives:
+    intro: "Now, I'd like to understand your acquisition goals."
+    primary: "What's the main reason you're looking to make an acquisition?"
+    timeline: "Do you have a specific timeline in mind?"
+
+  target_criteria:
+    intro: "Let's define what you're looking for in potential targets."
+    revenue: "What size of company are you targeting?"
+    regions: "Which geographic regions interest you most?"
+
+improvement_prompts:
+  company_profile: "I understand you'd like to revise the company information. What specific aspects should we update?"
+  objectives: "Let's refine your acquisition objectives. What would you like to adjust?"
+  target_criteria: "We can update the target criteria. Which aspects need modification?"
