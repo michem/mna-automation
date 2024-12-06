@@ -31,36 +31,16 @@ M&A are complex processes that require careful planning, execution, and evaluati
     pip install -r requirements.txt
     ```
 
-## Project Structure
-
-```bash
-mna/
-├── .env
-└── mna/
-    ├── __init__.py
-    ├── main.py
-    ├── crew.py
-    ├── tools/
-    │   ├── __init__.py
-    │   ├── fmp_tools.py          # Financial Markets Platform API tools
-    │   ├── valuation_tools.py    # Custom valuation calculation tools
-    │   ├── document_tools.py     # Document processing tools
-    │   └── research_tools.py     # Web research and data collection tools
-    ├── config/
-    │   ├── agents.yaml           # Agent configurations
-    │   ├── tasks.yaml            # Task definitions
-    │   └── settings.yaml         # General settings
-    └── agents/
-        └── __init__.py           # Agent implementations
-```
-
 ## Configuration
 
 TODO
 
 ## Usage
 
-TODO
+Run the main script to start the M&A automation system
+```bash
+python main.py
+```
 
 ## License
 
