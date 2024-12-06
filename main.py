@@ -19,13 +19,13 @@ def main():
     )
 
     output_dir = "outputs"
-    output_dir.mkdir(exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     file_writer = FileWriterTool(directory=str(output_dir))
 
     print("\n=== M&A Strategy Development System ===")
     print("Let's develop your acquisition strategy through a conversation.")
 
-    strategy_agent = StrategyAgent(llm=llm, tools=[file_writer])
+    strategy_agent = StrategyAgent(llm=llm, tools=[])
     context = strategy_agent.gather_context()
 
     while True:
@@ -41,17 +41,7 @@ def main():
         )
 
         try:
-            result = crew.kickoff()
-            if isinstance(result, str):
-                file_writer._run(
-                    filename="strategy.md",
-                    content=result,
-                    directory=str(output_dir),
-                    overwrite="True",
-                )
-                print(f"\nStrategy saved to outputs/strategy.md")
-            else:
-                print("\nStrategy generation completed")
+            _ = crew.kickoff()
 
         except Exception as e:
             print(f"\nError generating strategy: {e}")
