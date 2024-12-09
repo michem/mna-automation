@@ -1,75 +1,77 @@
-# main.py
+# mna_automation/main.py
 
-import os
-from pathlib import Path
+import sys
 
-import dotenv
-from crewai import LLM, Crew, Task
-from crewai_tools import FileWriterTool
+from colorama import Fore, Style, init
 
-from agents.strategy import StrategyAgent
+from agents.strategy_agent.agent import StrategyAgent
+from models.strategy import StrategyModel
+from utils.logger import get_logger, setup_logging
 
-dotenv.load_dotenv()
+
+def print_welcome():
+    print(
+        f"\n{Style.BRIGHT}{Fore.CYAN}=== M&A Strategy Development Process ==={Style.RESET_ALL}"
+    )
+    print(f"{Fore.YELLOW}Commands:{Style.RESET_ALL}")
+    print("- Press Ctrl+C to interrupt the process")
+    print("- Type 'exit' to end the conversation")
+    print(
+        f"\n{Fore.GREEN}Let's begin developing your M&A strategy...{Style.RESET_ALL}\n"
+    )
+    print("=" * 50 + "\n")
 
 
 def main():
-    llm = LLM(
-        api_key=os.getenv("GEMINI_API_KEY"),
-        model="gemini/gemini-1.5-pro",
-    )
+    """Main execution flow for M&A automation"""
+    # Initialize colorama
+    init()
 
-    output_dir = "outputs"
-    os.makedirs(output_dir, exist_ok=True)
-    file_writer = FileWriterTool(directory=str(output_dir))
+    # Setup logging
+    setup_logging()
+    logger = get_logger(__name__)
 
-    print("\n=== M&A Strategy Development System ===")
-    print("Let's develop your acquisition strategy through a conversation.")
+    try:
+        logger.info("Starting M&A Automation Process")
 
-    strategy_agent = StrategyAgent(llm=llm, tools=[])
-    context = strategy_agent.gather_context()
+        strategy_agent = StrategyAgent()
+        logger.info("Strategy Agent initialized")
 
-    while True:
-        strategy_task = strategy_agent.create_strategy_task(
-            context, output_dir=output_dir
+        print_welcome()
+
+        strategy: StrategyModel = strategy_agent.run()
+
+        if strategy:
+            logger.info("Strategy development completed successfully")
+            print(f"\n{Fore.CYAN}=== Final Strategy ==={Style.RESET_ALL}")
+            print(strategy.formatted_output())
+        else:
+            logger.warning("Strategy development was not completed")
+            print(
+                f"\n{Fore.YELLOW}Strategy development was not completed. Exiting the program.{Style.RESET_ALL}"
+            )
+            sys.exit(0)  # Exit gracefully
+
+        return strategy
+
+        # TODO: Initialize and run subsequent agents
+        # web_search_agent = WebSearchAgent(strategy)
+        # data_collection_agent = DataCollectionAgent(strategy)
+        # valuation_agent = ValuationAgent(strategy)
+
+    except KeyboardInterrupt:
+        logger.warning("Process interrupted by user")
+        print("\nProcess interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        logger.error("Critical error in M&A automation", exc_info=True)
+        print(f"\nAn error occurred: {str(e)}")
+        raise
+    finally:
+        print(
+            f"\n{Fore.GREEN}Thank you for using the M&A Automation System{Style.RESET_ALL}"
         )
-
-        print("\nGenerating M&A strategy...")
-
-        crew = Crew(
-            agents=[strategy_agent.agent],
-            tasks=[strategy_task],
-        )
-
-        try:
-            _ = crew.kickoff()
-
-        except Exception as e:
-            print(f"\nError generating strategy: {e}")
-            print("Let's gather more information to create a better strategy.")
-            context = strategy_agent.gather_context()
-            continue
-
-        while True:
-            improvements = input(
-                "\nWhat aspects of the strategy would you like to improve?\n"
-                "1. Company information\n"
-                "2. Objectives\n"
-                "3. Target criteria\n"
-                "4. Exit\n"
-                "Enter your choice (1-4): "
-            ).strip()
-
-            if improvements == "4":
-                return
-            elif improvements in ["1", "2", "3"]:
-                print("\nUpdating strategy based on your feedback...")
-                context = strategy_agent.update_context(
-                    context,
-                    {"1": "company", "2": "objectives", "3": "target"}[improvements],
-                )
-                break
-            else:
-                print("Please enter a valid choice (1-4)")
+        logger.info("M&A Automation Process completed")
 
 
 if __name__ == "__main__":

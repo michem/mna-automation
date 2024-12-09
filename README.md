@@ -31,6 +31,32 @@ M&A are complex processes that require careful planning, execution, and evaluati
     pip install -r requirements.txt
     ```
 
+## Project Structure
+```
+mna_automation/
+├── README.md
+├── requirements.txt
+├── main.py
+├── config/
+│   └── settings.py
+├── agents/
+│   ├── base_agent.py
+│   ├── strategy_agent/
+│   ├── web_search_agent/
+│   ├── data_collection_agent/
+│   ├── valuation_agent/
+│   ├── due_diligence_agent/
+│   ├── negotiation_agent/
+│   └── legal_agent/
+├── models/
+│   └── strategy.py
+│   ... [more models]
+└── utils/
+    ├── logger.py
+    ├── utils.py
+    └── web.py
+```
+
 ## Configuration
 
 TODO
