@@ -109,7 +109,6 @@ class StrategyAgent(BaseAgent):
                     if next_question:
                         self.agent.send_message(self._format_question(next_question))
 
-            # Generate and save strategy
             self._finalize_strategy()
             self.strategy.save_to_file()
 
