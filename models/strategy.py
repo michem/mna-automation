@@ -38,29 +38,29 @@ class StrategyModel(BaseModel):
         """Convert strategy to markdown format"""
         return f"""# M&A Strategy Report
 
-## Executive Summary
-Primary Goal: {self.primary_goal or 'Not defined'}
-{f'Secondary Goals: {", ".join(self.secondary_goals)}' if self.secondary_goals else ''}
+                ## Executive Summary
+                Primary Goal: {self.primary_goal or 'Not defined'}
+                {f'Secondary Goals: {", ".join(self.secondary_goals)}' if self.secondary_goals else ''}
 
-## Acquisition Overview
-- Type: {self.acquisition_type or 'To be determined'} acquisition
-- Buyer Classification: {self.buyer_type or 'To be determined'} buyer
+                ## Acquisition Overview
+                - Type: {self.acquisition_type or 'To be determined'} acquisition
+                - Buyer Classification: {self.buyer_type or 'To be determined'} buyer
 
-## Target Criteria
-- Industry: {self.target_criteria.industry or 'Not specified'}
-- Geography: {', '.join(self.target_criteria.geography) if self.target_criteria.geography else 'Not specified'}
-- Revenue Range: {self.target_criteria.revenue_range if self.target_criteria.revenue_range else 'Not specified'}
-- Key Requirements: {', '.join(self.target_criteria.key_requirements) if self.target_criteria.key_requirements else 'None specified'}
+                ## Target Criteria
+                - Industry: {self.target_criteria.industry or 'Not specified'}
+                - Geography: {', '.join(self.target_criteria.geography) if self.target_criteria.geography else 'Not specified'}
+                - Revenue Range: {self.target_criteria.revenue_range if self.target_criteria.revenue_range else 'Not specified'}
+                - Key Requirements: {', '.join(self.target_criteria.key_requirements) if self.target_criteria.key_requirements else 'None specified'}
 
-## Success Metrics
-{self._format_metrics_md()}
+                ## Success Metrics
+                {self._format_metrics_md()}
 
-## Risk Analysis
-{self._format_risks_md()}
+                ## Risk Analysis
+                {self._format_risks_md()}
 
-## Implementation Timeline
-{self._format_timeline_md()}
-"""
+                ## Implementation Timeline
+                {self._format_timeline_md()}
+                """
 
     def _format_metrics_md(self) -> str:
         if not self.success_metrics.primary:
