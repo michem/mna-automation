@@ -64,7 +64,7 @@ class StrategyAgent(BaseAgent):
         
         Return only the relevant extracted information.
         """
-        return self.agent.generate_response(analysis_prompt)
+        return self.agent.generate_reply(analysis_prompt)
 
     def _has_sufficient_information(self) -> bool:
         """Check if we have enough information to generate a strategy"""
@@ -151,7 +151,7 @@ class StrategyAgent(BaseAgent):
         Return only the question text.
         """
 
-        return self.agent.generate_response(question_prompt)
+        return self.agent.generate_reply(question_prompt)
 
     def _finalize_strategy(self):
         """Generate final strategy details"""
@@ -168,5 +168,5 @@ class StrategyAgent(BaseAgent):
         Return the complete strategy details in a structured format.
         """
 
-        final_details = self.agent.generate_response(finalization_prompt)
+        final_details = self.agent.generate_reply(finalization_prompt)
         self._update_strategy(final_details)
