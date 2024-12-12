@@ -31,6 +31,7 @@ class StrategyAgent(BaseAgent):
         - Ask follow-up questions only when crucial information is missing
         - Focus on understanding the core strategy rather than excessive details
         - Generate the strategy document when you have sufficient understanding
+        - When generating the strategy document, output only the strategy details enclosed in ```markdown``` code block and nothing else
         
         Remember to maintain a friendly yet professional tone throughout the conversation.
         """

@@ -28,7 +28,7 @@ def print_welcome():
 
 def ensure_output_directory():
     """Create output directory if it doesn't exist"""
-    output_dir = Path("output")
+    output_dir = Path("outputs")
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
