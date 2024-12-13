@@ -36,21 +36,17 @@ M&A are complex processes that require careful planning, execution, and evaluati
 mna_automation/
 ├── README.md
 ├── requirements.txt
-├── main.py
+├── app.py
 ├── config/
 │   └── settings.py
 ├── agents/
-│   ├── base_agent.py
-│   ├── strategy_agent/
-│   ├── web_search_agent/
-│   ├── data_collection_agent/
-│   ├── valuation_agent/
-│   ├── due_diligence_agent/
-│   ├── negotiation_agent/
-│   └── legal_agent/
-├── models/
-│   └── strategy.py
-│   ... [more models]
+│   ├── strategy_agent.py
+│   ├── web_search_agent.py
+│   ├── data_collection_agent.py
+│   ├── valuation_agent.py
+│   ├── due_diligence_agent.py
+│   ├── negotiation_agent.py
+│   └── legal_agent.py
 └── utils/
     ├── logger.py
     ├── utils.py

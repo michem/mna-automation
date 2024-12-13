@@ -1,1 +1,1 @@
-from .base_agent import *
+from .strategy_agent import *
