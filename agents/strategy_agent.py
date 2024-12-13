@@ -39,7 +39,7 @@ Remember to:
 - Guide towards actionable strategy development
 
 When the strategy is complete:
-1. Output it in markdown format enclosed in triple backticks as ```markdown ... ```
+1. Output it in markdown format enclosed in triple backticks as ```markdown ... ``` and nothing else
 2. Present it for user review
 3. Accept feedback and refine if needed
 
