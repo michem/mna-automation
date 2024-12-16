@@ -6,20 +6,12 @@ from typing import Any, Dict, List
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_CONFIG = [
     {
-        "model": "gemini-1.5-flash",
-        "api_key": GEMINI_API_KEY,
-        "api_type": "google",
-        "temperature": 0.7,
-        "top_p": 0.95,
-        "max_tokens": 2048,
-    },
-    {
         "model": "gemini-1.5-pro",
         "api_key": GEMINI_API_KEY,
         "api_type": "google",
         "temperature": 0.7,
         "top_p": 0.95,
-        "max_tokens": 2048,
+        "max_tokens": 8192,
     },
 ]
 
