@@ -8,6 +8,7 @@ import streamlit as st
 from autogen import ConversableAgent
 
 from agents.strategy_agent import StrategyAgent
+from agents.web_search_agent import WebSearchAgent
 from config.settings import BASE_CONFIG
 
 INITIAL_GREETING = "Hello! I'm your M&A Strategy Advisor. Let's begin crafting a robust acquisition strategy for your company. To start, can you tell me about your company and its current market position?"
@@ -42,7 +43,7 @@ class MnAUserProxyAgent(ConversableAgent):
         return st.session_state.current_user_input
 
 
-def init_agents() -> tuple[StreamingStrategyAgent, MnAUserProxyAgent]:
+def init_agents() -> tuple[StreamingStrategyAgent, MnAUserProxyAgent, WebSearchAgent]:
     """Initialize the agents with error handling"""
     try:
         strategy_agent = StreamingStrategyAgent(
@@ -60,7 +61,9 @@ def init_agents() -> tuple[StreamingStrategyAgent, MnAUserProxyAgent]:
             .endswith("TERMINATE"),
         )
 
-        return strategy_agent, user_proxy
+        web_search_agent = WebSearchAgent(llm_config=BASE_CONFIG)
+
+        return strategy_agent, user_proxy, web_search_agent
     except Exception as e:
         st.error(f"Failed to initialize agents: {str(e)}")
         st.stop()
@@ -70,9 +73,15 @@ def initialize_session_state() -> None:
     """Initialize the session state with proper typing"""
     if "messages" not in st.session_state:
         st.session_state.messages = []
-        st.session_state.strategy_agent, st.session_state.user_proxy = init_agents()
+        (
+            st.session_state.strategy_agent,
+            st.session_state.user_proxy,
+            st.session_state.web_search_agent,
+        ) = init_agents()
         st.session_state.chat_initiated = False
         st.session_state.chat_terminated = False
+        st.session_state.web_search_completed = False
+        st.session_state.web_search_table = None
         st.session_state.messages.append(
             {"role": "assistant", "content": INITIAL_GREETING}
         )
@@ -127,35 +136,60 @@ def main() -> None:
     initialize_session_state()
     display_chat_history()
 
-    if not st.session_state.chat_terminated:
-        if prompt := st.chat_input("Your response"):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
+    if not st.session_state.web_search_completed:
+        if not st.session_state.chat_terminated:
+            if prompt := st.chat_input("Your response"):
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.markdown(prompt)
 
-            st.session_state.current_user_input = prompt
+                st.session_state.current_user_input = prompt
 
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking..."):
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            response = loop.run_until_complete(
+                                process_agent_response(prompt)
+                            )
+                            st.session_state.messages.append(
+                                {"role": "assistant", "content": response}
+                            )
+
+                        finally:
+                            loop.close()
+        else:
+            if not st.session_state.web_search_table:
+                with st.spinner("Initiating Web Search..."):
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        response = loop.run_until_complete(
-                            process_agent_response(prompt)
-                        )
-                        st.session_state.messages.append(
-                            {"role": "assistant", "content": response}
-                        )
-
-                        if "TERMINATE" in response:
-                            st.success("✅ Strategy development completed!")
-                            st.info(
-                                "The strategy has been saved to outputs/strategy.md"
+                        web_search_result = loop.run_until_complete(
+                            asyncio.to_thread(
+                                st.session_state.web_search_agent.initiate_web_search,
+                                st.session_state.messages[-1]["content"],
                             )
+                        )
+                        st.session_state.web_search_table = web_search_result.summary
+                        st.session_state.web_search_completed = True
+                        st.session_state.messages.append(
+                            {
+                                "role": "assistant",
+                                "content": f"Web search completed. Here are the results:\n\n{st.session_state.web_search_table}",
+                            }
+                        )
+                        st.experimental_rerun()
                     finally:
                         loop.close()
+            else:
+                st.success("Web search completed!")
+                st.markdown(st.session_state.web_search_table)
+
     else:
-        st.info("Strategy development has been completed. The chat is now closed.")
+        st.info(
+            "Strategy development and web search completed. The chat is now closed."
+        )
 
 
 if __name__ == "__main__":
