@@ -2,49 +2,66 @@
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Annotated, Dict, List, Optional, Union
 
-from autogen import ConversableAgent
+from autogen import Agent, ConversableAgent
 
 from config.settings import BASE_CONFIG, OUTPUT_DIR
 
-STRATEGY_PROMPT = """You are an expert M&A Strategy Advisor with extensive experience in helping companies develop acquisition strategies. Your role is to:
+STRATEGY_PROMPT = """You are a project manager for a Merger and Aquisitions consultancy firm. You are polite and well manered.
 
-1. Guide users through a strategic discussion about their M&A objectives
-2. Ask relevant questions to understand their needs
-3. Analyze responses holistically to avoid redundant questions
-4. Develop a comprehensive acquisition strategy
+Your goal is to prepare aquistion strategy for the client. Get all the information from client. Don't assume anything.
 
-Follow these guidelines:
-- Maintain a natural, conversational flow
-- Ask one question at a time
-- Analyze user responses for implicit information
-- Adapt questions based on previous responses
-- Focus on strategic objectives, market positioning, and value creation
-- Be thorough but efficient in information gathering
+Don't ask all the information at once. Ask one by one and keep the conversational flow smooth.
 
-Key areas to explore:
-- Strategic objectives (market expansion, technology acquisition, talent acquisition)
-- Buyer type (financial vs. strategic)
-- Acquisition type (horizontal vs. vertical)
-- Success criteria and metrics
-- Industry-specific considerations
-- Risk factors and mitigation strategies
+1. Define Strategic Objectives:
+o Identify whether the goal is market expansion, technology acquisition, talent
+acquisition, cost synergies, or another objective.
+o Determine if the buyer is a financial or strategic buyer.
+o For strategic buyers, determine whether the acquisition is horizontal or
+vertical:
+▪ Horizontal Acquisition: Acquiring a company that operates in the
+same industry and at the same stage of the supply chain.
+▪ Vertical Acquisition: Acquiring a company that operates at a different
+stage of the supply chain (either upstream or downstream).
 
-Remember to:
-- Acknowledge user responses
-- Show understanding of industry context
-- Provide strategic insights
-- Maintain professional tone
-- Guide towards actionable strategy development
+2. Prioritize Objectives:
+o Rank the objectives based on the user's business priorities.
+3. Establish Measurable Criteria for Success:
+o Set clear metrics to gauge the success of the acquisition strategy.
+
+Once you have all the information from client, you are to provide the strategy to the client.
 
 When the strategy is complete:
-1. Output it in markdown format enclosed in triple backticks as ```markdown ... ``` and nothing else
+1. Output the strategy in well-formatted markdown
 2. Present it for user review
-3. Accept feedback and refine if needed
+3. When the strategy is approved:
+   - Use the save_file tool to save ONLY the strategy content to outputs/strategy.md
+   - Ensure no conversational text or TERMINATE message is included in the saved content
+4. After successfully saving, return 'TERMINATE'
 
-Return 'TERMINATE' only when the strategy is approved.
-"""
+Return 'TERMINATE' only when the strategy is approved and has been successfully saved using the save_file tool."""
+
+
+def save_file(
+    content: Annotated[
+        str,
+        "The acquisition strategy content in markdown format, without any conversational elements",
+    ],
+    filepath: Annotated[
+        str,
+        "Path where to save the strategy markdown file, should be outputs/strategy.md",
+    ],
+) -> str:
+    """Save the acquisition strategy to a markdown file. Only the strategy content should be saved,
+    without any conversational elements or termination messages."""
+    try:
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+        return f"Successfully saved strategy to {filepath}"
+    except Exception as e:
+        return f"Error saving file: {str(e)}"
 
 
 class StrategyAgent(ConversableAgent):
@@ -63,33 +80,18 @@ class StrategyAgent(ConversableAgent):
         self.strategy = {}
         self.strategy_approved = False
 
-    def _save_strategy(self, strategy_text: str) -> str:
-        strategy_path = Path(OUTPUT_DIR) / "strategy.md"
-        with open(strategy_path, "w") as f:
-            f.write(strategy_text)
-        return str(strategy_path)
+        self.register_for_execution(
+            name="save_file",
+        )(save_file)
 
-    def _format_strategy(self) -> str:
-        return f"""# M&A Acquisition Strategy
-
-                ## Strategic Objectives
-                {self.strategy.get('objectives', 'Not specified')}
-
-                ## Buyer Profile
-                - Type: {self.strategy.get('buyer_type', 'Not specified')}
-                - Acquisition Approach: {self.strategy.get('acquisition_type', 'Not specified')}
-
-                ## Target Criteria
-                {self.strategy.get('target_criteria', 'Not specified')}
-
-                ## Success Metrics
-                {self.strategy.get('success_metrics', 'Not specified')}
-
-                ## Risk Analysis & Mitigation
-                {self.strategy.get('risk_analysis', 'Not specified')}
-
-                ## Timeline & Next Steps
-                {self.strategy.get('next_steps', 'Not specified')}"""
+        self.register_for_llm(
+            name="save_file",
+            description=(
+                "Save the final acquisition strategy to outputs/strategy.md. "
+                "This should be called only when the strategy is approved. "
+                "Save only the strategy content in markdown format, without any conversation or TERMINATE messages."
+            ),
+        )(save_file)
 
     def update_strategy(self, key: str, value: str):
         self.strategy[key] = value
@@ -97,15 +99,5 @@ class StrategyAgent(ConversableAgent):
     def get_human_input(self, prompt: str) -> str:
         if "approve" in prompt.lower() and "strategy" in prompt.lower():
             response = super().get_human_input(prompt)
-            self.strategy_approved = response.lower() in [
-                "yes",
-                "y",
-                "approved",
-                "approve",
-            ]
-            if self.strategy_approved:
-                strategy_text = self._format_strategy()
-                self._save_strategy(strategy_text)
-                return f"Strategy approved and saved.\n\n```markdown\n{strategy_text}\n```\nTERMINATE"
             return response
         return super().get_human_input(prompt)
