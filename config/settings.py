@@ -4,6 +4,8 @@ import os
 from typing import Any, Dict, List
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+BING_API_KEY = os.getenv("BING_API_KEY")
+
 GEMINI_CONFIG = [
     {
         "model": "gemini-1.5-pro",

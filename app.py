@@ -31,10 +31,7 @@ class StreamingStrategyAgent(StrategyAgent):
             if not content:
                 return
 
-            words = content.split()
-            for i, word in enumerate(words):
-                yield word + (" " if i < len(words) - 1 else "")
-                await asyncio.sleep(0.05)
+            yield content
         except Exception as e:
             st.error(f"Error generating response: {str(e)}")
             yield "I apologize, but I encountered an error. Please try again."
@@ -55,9 +52,9 @@ def init_agents() -> tuple[StreamingStrategyAgent, MnAUserProxyAgent]:
 
         user_proxy = MnAUserProxyAgent(
             name="User",
-            human_input_mode="NEVER",
+            human_input_mode="TERMINATE",
             code_execution_config=False,
-            max_consecutive_auto_reply=1,
+            max_consecutive_auto_reply=0,
             is_termination_msg=lambda x: x.get("content", "")
             .strip()
             .endswith("TERMINATE"),
