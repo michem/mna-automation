@@ -1,7 +1,10 @@
 # mna_automation/agents/web_search_agent.py
 
 import os
+import signal
+import threading
 from datetime import datetime
+from functools import wraps
 from typing import Dict, Optional, Union
 
 DATE = datetime.now().strftime("%B %d, %Y")
@@ -15,7 +18,7 @@ from autogen.agentchat.contrib.web_surfer import (
 
 from config.settings import BASE_CONFIG
 
-researcher_prompt = f"""You are an experienced M&A researcher tasked with finding potential publically listed acquisition targets based on a strategy report. The year is {DATE}.
+researcher_prompt = f"""You are an experienced M&A researcher tasked with finding potential acquisition targets based on a strategy report that match the target profile. The year is {DATE}.
 
 WORKFLOW:
 1. ANALYZE & GENERATE QUERIES
@@ -88,7 +91,6 @@ Please open, scrape, and display contents of the first link titled <first search
   * Verify they are publicly listed companies
   * Create a neatly formatted markdown table with the following columns:
     - Company Name
-    - Stock Symbol
     - Description
 
 4. OUTPUT
@@ -105,11 +107,33 @@ IMPORTANT:
 """
 
 
+def timeout_handler(signum, frame):
+    raise TimeoutError("Function execution timed out")
+
+
+def with_timeout(timeout_seconds=30):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout_seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wrapper
+
+    return decorator
+
+
 class WebSearchAgent:
     def __init__(
         self,
         llm_config: Optional[Union[Dict, bool]] = BASE_CONFIG,
         bing_api_key: Optional[str] = os.getenv("BING_API_KEY"),
+        timeout: int = 30,
     ):
         if isinstance(llm_config, dict) and "request_timeout" in llm_config:
             del llm_config["request_timeout"]
@@ -131,11 +155,40 @@ class WebSearchAgent:
             ),
             is_termination_msg=lambda msg: "`TERMINATE`" in msg["content"],
         )
+        self.timeout = timeout
 
+    @with_timeout(30)
     def initiate_web_search(self, strategy_report: str):
-        result = self.web_surfer.initiate_chat(
-            self.researcher,
-            message=f"Here is the acquisition strategy report. Generate search queries based on the target profile, then execute them sequentially:\n\n{strategy_report}",
-            silent=False,
-        )
-        return result
+        try:
+            result = self.web_surfer.initiate_chat(
+                self.researcher,
+                message=f"Here is the acquisition strategy report. Generate search queries based on the target profile, then execute them sequentially:\n\n{strategy_report}",
+                silent=False,
+            )
+            return result
+        except TimeoutError:
+            return "Search operation timed out. Please try again."
+        except Exception as e:
+            return f"An error occurred: {str(e)}"
+
+    def safe_execute_function(self, func, *args, **kwargs):
+        """Execute a function with a timeout"""
+        result = [None]
+        error = [None]
+
+        def target():
+            try:
+                result[0] = func(*args, **kwargs)
+            except Exception as e:
+                error[0] = e
+
+        thread = threading.Thread(target=target)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=self.timeout)
+
+        if thread.is_alive():
+            return None, "Operation timed out"
+        if error[0] is not None:
+            return None, str(error[0])
+        return result[0], None
