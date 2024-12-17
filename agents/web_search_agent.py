@@ -18,7 +18,7 @@ from autogen.agentchat.contrib.web_surfer import (
 
 from config.settings import BASE_CONFIG
 
-researcher_prompt = f"""You are an experienced M&A researcher tasked with finding potential acquisition targets based on a strategy report that match the target profile. The year is {DATE}.
+researcher_prompt = f"""You are an experienced M&A researcher tasked with finding potential publically listed acquisition targets based on a strategy report that match the target profile. The year is {DATE}.
 
 WORKFLOW:
 1. ANALYZE & GENERATE QUERIES
@@ -91,6 +91,7 @@ Please open, scrape, and display contents of the first link titled <first search
   * Verify they are publicly listed companies
   * Create a neatly formatted markdown table with the following columns:
     - Company Name
+    - Stock Symbol
     - Description
 
 4. OUTPUT
@@ -157,7 +158,7 @@ class WebSearchAgent:
         )
         self.timeout = timeout
 
-    @with_timeout(30)
+    # @with_timeout(30)
     def initiate_web_search(self, strategy_report: str):
         try:
             result = self.web_surfer.initiate_chat(

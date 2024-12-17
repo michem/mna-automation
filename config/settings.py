@@ -32,7 +32,6 @@ OPENAI_CONFIG = [
 BASE_CONFIG = {
     "config_list": OPENAI_CONFIG,
     "temperature": 0.7,
-    "request_timeout": 60,
     "timeout": 60,
     "seed": 42,
 }
