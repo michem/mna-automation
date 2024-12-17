@@ -21,7 +21,7 @@ def read_strategy_file() -> str:
 def save_targets(results: str):
     targets_path = Path(OUTPUT_DIR) / "target_companies.md"
     with open(targets_path, "w", encoding="utf-8") as f:
-        f.write(results)
+        f.write(str(results))
     print(f"Target companies saved to {targets_path}")
 
 

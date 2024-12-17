@@ -25,13 +25,15 @@ OPENAI_CONFIG = [
         "temperature": 0.7,
         "top_p": 0.95,
         "max_tokens": 4096,
+        "api_rate_limit": 60.0,
     },
 ]
 
 BASE_CONFIG = {
     "config_list": OPENAI_CONFIG,
     "temperature": 0.7,
-    "request_timeout": 120,
+    "request_timeout": 60,
+    "timeout": 60,
     "seed": 42,
 }
 
