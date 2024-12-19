@@ -21,7 +21,7 @@ The strategy should include:
 - Geographic preferences"""
 
 
-def parse_markdown_table(table_str: str) -> Tuple[List[str], List[Dict[str, str]]]:
+def parse_markdown_table(table_str: str):
     """Parse markdown table into headers and rows."""
     lines = [line.strip() for line in table_str.split("\n")]
     lines = [line for line in lines if line and line.strip("| ")]
@@ -148,9 +148,18 @@ async def process_strategy_input(strategy: str) -> None:
             if isinstance(result, dict):
                 if result["type"] == "table":
                     st.table(result["data"].assign(hack="").set_index("hack"))
+                    table_markdown = result["data"].to_markdown()
                     st.session_state.messages.append(
-                        {"role": "assistant", "content": result["data"].to_markdown()}
+                        {"role": "assistant", "content": table_markdown}
                     )
+
+                    try:
+                        with open("outputs/target_companies.md", "w") as f:
+                            f.write("# Target Companies\n\n")
+                            f.write(table_markdown)
+                        st.success("Results saved to target_companies.md")
+                    except Exception as e:
+                        st.error(f"Error saving results to file: {str(e)}")
                 else:
                     response_placeholder.error(result["data"])
                     st.session_state.messages.append(
