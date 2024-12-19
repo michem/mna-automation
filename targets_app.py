@@ -147,7 +147,7 @@ async def process_strategy_input(strategy: str) -> None:
         async for result in st.session_state.web_search_agent.a_get_response(strategy):
             if isinstance(result, dict):
                 if result["type"] == "table":
-                    st.table(result["data"])
+                    st.table(result["data"].assign(hack="").set_index("hack"))
                     st.session_state.messages.append(
                         {"role": "assistant", "content": result["data"].to_markdown()}
                     )
