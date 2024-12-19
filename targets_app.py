@@ -2,8 +2,9 @@
 
 import asyncio
 import re
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Dict, List, Optional, Tuple
 
+import pandas as pd
 import streamlit as st
 from autogen import ConversableAgent
 
@@ -20,20 +21,48 @@ The strategy should include:
 - Geographic preferences"""
 
 
+def parse_markdown_table(table_str: str) -> Tuple[List[str], List[Dict[str, str]]]:
+    """Parse markdown table into headers and rows."""
+    lines = [line.strip() for line in table_str.split("\n")]
+    lines = [line for line in lines if line and line.strip("| ")]
+
+    if len(lines) < 3:
+        raise ValueError("Invalid table format")
+    headers = [h.strip() for h in lines[0].split("|")[1:-1]]
+    rows = []
+
+    for line in lines[2:]:
+        if not line.startswith("|"):
+            continue
+        values = [cell.strip() for cell in line.split("|")[1:-1]]
+        if len(values) == len(headers):
+            row_dict = dict(zip(headers, values))
+            rows.append(row_dict)
+
+    if not rows:
+        raise ValueError("No valid data rows found in table")
+
+    return headers, rows
+
+
 class StreamingWebSearchAgent(WebSearchAgent):
+    def __init__(self, llm_config):
+        super().__init__(llm_config=llm_config)
+        self.researcher.human_input_mode = "NEVER"
+        self.web_surfer.human_input_mode = "NEVER"
+
     async def a_get_response(
         self,
         strategy_report: str,
     ) -> AsyncGenerator[str, None]:
         """Stream the conversation between researcher and web surfer"""
         try:
-
-            self.researcher.reset()
-            self.web_surfer.reset()
+            # self.researcher.reset()
+            # self.web_surfer.reset()
 
             initial_message = f"Here is the acquisition strategy report. Generate search queries based on the target profile, then execute them sequentially:\n\n{strategy_report}"
 
-            self.web_surfer.initiate_chat(
+            chat_result = self.web_surfer.initiate_chat(
                 self.researcher,
                 message=initial_message,
                 silent=False,
@@ -41,19 +70,44 @@ class StreamingWebSearchAgent(WebSearchAgent):
 
             final_message = self.researcher.last_message()["content"]
             if "`TERMINATE`" in final_message:
+                # Extract everything between the first and last line containing "|"
+                lines = final_message.split("\n")
+                table_lines = []
+                start_idx = None
+                end_idx = None
 
-                table_pattern = r"\|.*\|[\s\S]*?\|.*\|"
-                table_match = re.search(table_pattern, final_message)
-                if table_match:
-                    yield table_match.group(0)
+                for i, line in enumerate(lines):
+                    if "|" in line:
+                        if start_idx is None:
+                            start_idx = i
+                        end_idx = i
+
+                if start_idx is not None and end_idx is not None:
+                    table_str = "\n".join(lines[start_idx : end_idx + 1])
+                    try:
+                        headers, rows = parse_markdown_table(table_str)
+                        df = pd.DataFrame(rows)
+                        yield {"type": "table", "data": df}
+                    except Exception as e:
+                        st.error(f"Error parsing table: {str(e)}")
+                        yield {
+                            "type": "error",
+                            "data": f"Error parsing table: {str(e)}",
+                        }
                 else:
-                    yield "No results table found in the response."
+                    yield {
+                        "type": "error",
+                        "data": "No results table found in the response.",
+                    }
             else:
-                yield "Search did not complete successfully."
+                yield {"type": "error", "data": "Search did not complete successfully."}
 
         except Exception as e:
             st.error(f"Error during web search: {str(e)}")
-            yield "An error occurred during the search process."
+            yield {
+                "type": "error",
+                "data": "An error occurred during the search process.",
+            }
 
 
 def init_agent() -> StreamingWebSearchAgent:
@@ -91,8 +145,17 @@ async def process_strategy_input(strategy: str) -> None:
         response_placeholder = st.empty()
 
         async for result in st.session_state.web_search_agent.a_get_response(strategy):
-            response_placeholder.markdown(result)
-            st.session_state.messages.append({"role": "assistant", "content": result})
+            if isinstance(result, dict):
+                if result["type"] == "table":
+                    st.table(result["data"])
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": result["data"].to_markdown()}
+                    )
+                else:
+                    response_placeholder.error(result["data"])
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": result["data"]}
+                    )
 
         st.session_state.search_completed = True
 
