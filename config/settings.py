@@ -9,7 +9,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 GEMINI_CONFIG = [
     {
-        "model": "gemini-1.5-flash",
+        "model": "gemini-2.0-flash-exp",
         "api_key": GEMINI_API_KEY,
         "api_type": "google",
         "temperature": 0.7,
@@ -31,6 +31,13 @@ OPENAI_CONFIG = [
 
 BASE_CONFIG = {
     "config_list": OPENAI_CONFIG,
+    "temperature": 0.7,
+    "timeout": 60,
+    "seed": 42,
+}
+
+BASE_GEMINI = {
+    "config_list": GEMINI_CONFIG,
     "temperature": 0.7,
     "timeout": 60,
     "seed": 42,
