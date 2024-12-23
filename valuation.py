@@ -39,12 +39,15 @@ def main():
     analyzer = AnalyzerAgent()
     reporter = ReporterAgent()
 
+    # First analyze individual companies
     reporter.initiate_chat(
         analyzer,
         message=(
             "Analyze the following strategy and target companies. "
             "Extract stock symbols, perform valuations, and generate reports. "
-            "After processing all symbols, respond with exactly 'TERMINATE':\n\n"
+            "After processing all companies, generate a final recommendation "
+            "and save it as 'final_recommendation.md'. "
+            "Then respond with exactly 'TERMINATE':\n\n"
             f"{content}"
         ),
     )
