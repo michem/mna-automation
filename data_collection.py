@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from agents.collection_agent import CollectionAgent
+from agents.collection_agent import DataCollectorAgent, ExecutorAgent
 from config.settings import OUTPUT_DIR
 
 
@@ -36,15 +36,16 @@ def read_input_files() -> str:
 def main():
     content = read_input_files()
 
-    collection_agent = CollectionAgent()
-    collection_agent.initiate_chat(
-        collection_agent,
+    collector = DataCollectorAgent()
+    executor = ExecutorAgent()
+
+    executor.initiate_chat(
+        collector,
         message=(
-            "Extract stock symbols and fetch financial data JSON files for companies in the content below. "
-            "After saving all JSON files, respond with exactly 'TERMINATE':\n\n"
+            "Extract stock symbols and request financial data collection for companies in the content below. "
+            "After processing all symbols, respond with exactly 'TERMINATE':\n\n"
             f"{content}"
         ),
-        max_turns=3,
     )
 
 
