@@ -37,7 +37,11 @@ Example workflow:
 
 def collect_and_save_fmp_data(symbol: str) -> str:
     """Collect FMP data and save it, returning only a status message"""
-    api_key = os.getenv("FMP_API_KEY", "vcS4GLjpRr6YPgpYrwzM6BwZJHAcl3M0")
+    api_key = os.getenv("FMP_API_KEY")
+    if not api_key:
+        return (
+            "FMP API key not found. Please set the 'FMP_API_KEY' environment variable."
+        )
     base_url = "https://financialmodelingprep.com/api/v3"
 
     endpoints = {

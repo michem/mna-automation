@@ -39,7 +39,6 @@ def main():
     analyzer = AnalyzerAgent()
     reporter = ReporterAgent()
 
-    # First analyze individual companies
     reporter.initiate_chat(
         analyzer,
         message=(
