@@ -8,7 +8,7 @@ from config.settings import OUTPUT_DIR
 
 
 def read_strategy_file() -> str:
-    strategy_path = Path(OUTPUT_DIR) / "strategy.md"
+    strategy_path = Path(OUTPUT_DIR) / "strategy_hc.md"
     if not strategy_path.exists():
         raise FileNotFoundError(
             "Strategy file not found. Please run the strategy agent first."
