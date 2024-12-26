@@ -2,9 +2,9 @@
 
 import os
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional, Union
+from typing import Dict, Optional, Union
 
-from autogen import Agent, ConversableAgent
+from autogen import ConversableAgent
 
 from config.settings import BASE_CONFIG, OUTPUT_DIR
 
@@ -30,36 +30,50 @@ o Rank the objectives based on the user's business priorities.
 3. Establish Measurable Criteria for Success:
 o Set clear metrics to gauge the success of the acquisition strategy.
 
-Once you have all the information from client, you are to provide the strategy to the client.
+Process:
+1. Gather information through focused questions
+2. Analyze requirements and priorities
+3. Generate detailed strategy
+4. Format and save output
 
-When the strategy is complete:
-1. Output the strategy in well-formatted markdown
-2. Present it for user review
-3. When the strategy is approved:
-   - Use the save_file tool to save ONLY the strategy content to outputs/strategy.md
-   - Ensure no conversational text or TERMINATE message is included in the saved content
-4. After successfully saving, return 'TERMINATE'
+Once you have sufficient information, generate a complete strategy document in markdown format.
 
-Return 'TERMINATE' only when the strategy is approved and has been successfully saved using the save_file tool."""
+After generating the strategy, use the save_file tool to save it.
+
+Return 'TERMINATE' when the strategy has been successfully saved.
+
+Output Format:
+# Acquisition Strategy
+## Overview
+[High-level strategic goals and approach]
+
+## Target Profile
+- Industry:
+- Size Range:
+- Geographic Focus:
+- Key Capabilities:
+
+## Strategic Rationale
+[Detailed explanation of strategic fit]
+
+## Success Criteria
+[Measurable objectives and timeline]
+
+## Risk Assessment
+[Key risks and mitigation strategies]
+
+## Integration Approach
+[High-level integration strategy]"""
 
 
-def save_file(
-    content: Annotated[
-        str,
-        "The acquisition strategy content in markdown format, without any conversational elements",
-    ],
-    filepath: Annotated[
-        str,
-        "Path where to save the strategy markdown file, should be outputs/strategy.md",
-    ],
-) -> str:
-    """Save the acquisition strategy to a markdown file. Only the strategy content should be saved,
-    without any conversational elements or termination messages."""
+def save_file(content: str) -> str:
+    """Save the acquisition strategy to a markdown file"""
     try:
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        filepath = Path(OUTPUT_DIR) / "strategy.md"
+        os.makedirs(filepath.parent, exist_ok=True)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-        return f"Successfully saved strategy to {filepath}"
+        return "TERMINATE"
     except Exception as e:
         return f"Error saving file: {str(e)}"
 
@@ -75,29 +89,11 @@ class StrategyAgent(ConversableAgent):
             name=name,
             system_message=system_message,
             llm_config=llm_config,
-            human_input_mode="TERMINATE",
+            human_input_mode="NEVER",
+            is_termination_msg=lambda x: "TERMINATE" in x.get("content", ""),
         )
-        self.strategy = {}
-        self.strategy_approved = False
-
-        self.register_for_execution(
-            name="save_file",
-        )(save_file)
 
         self.register_for_llm(
             name="save_file",
-            description=(
-                "Save the final acquisition strategy to outputs/strategy.md. "
-                "This should be called only when the strategy is approved. "
-                "Save only the strategy content in markdown format, without any conversation or TERMINATE messages."
-            ),
+            description="Save the strategy document to outputs/strategy.md",
         )(save_file)
-
-    def update_strategy(self, key: str, value: str):
-        self.strategy[key] = value
-
-    def get_human_input(self, prompt: str) -> str:
-        if "approve" in prompt.lower() and "strategy" in prompt.lower():
-            response = super().get_human_input(prompt)
-            return response
-        return super().get_human_input(prompt)
