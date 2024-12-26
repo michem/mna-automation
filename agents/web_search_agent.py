@@ -164,6 +164,7 @@ class WebSearchAgent:
             name="web_surfer",
             llm_config=llm_config,
             summarizer_llm_config=llm_config,
+            human_input_mode="NEVER",
             browser=RequestsMarkdownBrowser(
                 viewport_size=4096, search_engine=search_engine
             ),
