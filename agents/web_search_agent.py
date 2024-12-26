@@ -118,7 +118,42 @@ IMPORTANT RULES:
 - Output EXACTLY 5 target companies
 - Follow the exact output format specified
 - No additional text or explanations in final output
+
+TOOL USAGE:
+- Use the 'save_formatted_output' tool once your final formatted results are ready.
+- For web scraping, instruct the 'web_surfer' to open or summarize search results by referencing their titles. Summaries can be kept until final output.
 """
+
+
+def extract_formatted_output(content: str) -> str:
+    """Extract the formatted output section from the chat content."""
+    try:
+        start_idx = content.rfind("# Acquirer")
+        if start_idx == -1:
+            return ""
+
+        end_idx = content.find("`TERMINATE`", start_idx)
+        if end_idx == -1:
+            return content[start_idx:]
+
+        return content[start_idx:end_idx].strip()
+    except Exception as e:
+        return f"Error extracting output: {str(e)}"
+
+
+def save_formatted_output(content: str, filepath: str) -> str:
+    """Save the formatted output to a file."""
+    try:
+        output = extract_formatted_output(content)
+        if not output:
+            return "Error: No valid formatted output found"
+
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(output)
+        return f"Successfully saved formatted output to {filepath}"
+    except Exception as e:
+        return f"Error saving output: {str(e)}"
 
 
 def timeout_handler(signum, frame):
@@ -140,6 +175,11 @@ def with_timeout(timeout_seconds=30):
         return wrapper
 
     return decorator
+
+
+researcher_prompt += """
+\n\nAfter formatting the output, use the save_formatted_output tool to save only the formatted section to the specified file.
+"""
 
 
 class WebSearchAgent:
@@ -171,20 +211,38 @@ class WebSearchAgent:
             is_termination_msg=lambda msg: "`TERMINATE`" in msg["content"],
         )
         self.timeout = timeout
+        self.web_surfer.register_for_llm(
+            name="save_formatted_output",
+            description="Save the formatted output (acquirer details and target companies table) to a file",
+        )(save_formatted_output)
+
+        self.researcher.register_for_execution(name="save_formatted_output")(
+            save_formatted_output
+        )
 
     # @with_timeout(30)
-    def initiate_web_search(self, strategy_report: str):
+    def initiate_web_search(self, strategy_report: str) -> Dict:
         try:
             result = self.web_surfer.initiate_chat(
                 self.researcher,
-                message=f"Here is the acquisition strategy report. Generate search queries based on the target profile, then execute them sequentially:\n\n{strategy_report}",
+                message=f"Here is the acquisition strategy report. Generate search queries based on the target profile, then execute them sequentially. After formatting the output, save it to 'outputs/target_companies.md':\n\n{strategy_report}",
                 silent=False,
             )
-            return result
+
+            if hasattr(result, "summary"):
+                formatted_output = extract_formatted_output(result.summary)
+            else:
+                formatted_output = extract_formatted_output(str(result))
+
+            return {"success": True, "content": formatted_output}
+
         except TimeoutError:
-            return "Search operation timed out. Please try again."
+            return {
+                "success": False,
+                "error": "Search operation timed out. Please try again.",
+            }
         except Exception as e:
-            return f"An error occurred: {str(e)}"
+            return {"success": False, "error": f"An error occurred: {str(e)}"}
 
     def safe_execute_function(self, func, *args, **kwargs):
         """Execute a function with a timeout"""
