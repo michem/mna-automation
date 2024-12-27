@@ -14,58 +14,150 @@ from config.settings import BASE_CONFIG, OUTPUT_DIR
 
 ANALYZER_PROMPT = """You are a Valuation Analysis Expert specializing in M&A transactions. Your role is to thoroughly evaluate target companies based on their financial data and the overall acquisition strategy.
 
-You have access to these tools:
-1. get_financial_metrics(symbol: str) -> Dict:
-   Returns key financial metrics including:
-   - Revenue, EBITDA, Net Income for last 5 years
-   - Growth rates and margins
-   - Free cash flow
+Available Tools:
+1. Data Collection:
+   - get_financial_metrics(symbol: str) -> Dict
+     Returns revenue, EBITDA, margins, growth rates
+   - get_balance_sheet_metrics(symbol: str) -> Dict
+     Returns cash, debt, assets, liabilities, equity
+   - get_market_data(symbol: str) -> Dict
+     Returns price, market cap, P/E ratio, volume
+   - load_financial_data(symbol: str) -> Dict
+     Loads raw financial data from storage
 
-2. get_balance_sheet_metrics(symbol: str) -> Dict:
-   Returns key balance sheet items including:
-   - Cash and investments
-   - Debt levels
-   - Asset and liability totals
-   - Shareholder equity
+2. Analysis:
+   - calculate_dcf(financials: Dict, wacc: float = 0.12, growth_rate: float = 0.03) -> Dict
+     Performs DCF valuation using provided financials
+   - analyze_comparables(company_data: Dict, target_metrics: List[str]) -> Dict
+     Analyzes company using market multiples
+   - assess_synergies(acquirer_data: Dict, target_data: Dict, strategy: str) -> Dict
+     Assesses potential synergies between companies
 
-3. get_market_data(symbol: str) -> Dict:
-   Returns current market data including:
-   - Stock price
-   - Market cap
-   - Trading multiples
-   - Volume metrics
+3. Reporting:
+   - save_complete_report(report: str) -> str
+     Saves the complete analysis including all companies
+   - generate_final_recommendation(analyzed_companies: List[str]) -> str
+     Generates final recommendation comparing all targets
+     
+CRITICAL: For each company, you must maintain the collected data between function calls. Follow this sequence:
 
-4. calculate_dcf(financials: Dict, wacc: float, growth_rate: float) -> Dict:
-   Performs DCF valuation using:
-   - Historical free cash flows
-   - Growth assumptions
-   - Discount rate
+1. Data Collection & Analysis (PER COMPANY):
+   ```python
+   # Step 1: Get financial metrics
+   financial_metrics = await get_financial_metrics("SYMBOL")
+   if "error" in financial_metrics:
+       continue
+   
+   # Step 2: Get balance sheet
+   balance_sheet = await get_balance_sheet_metrics("SYMBOL")
+   if "error" in balance_sheet:
+       continue
+   
+   # Step 3: Get market data
+   market_data = await get_market_data("SYMBOL")
+   if "error" in market_data:
+       continue
+   
+   # Step 4: Calculate DCF using collected financial_metrics
+   dcf_valuation = await calculate_dcf(
+       financials=financial_metrics,  # REQUIRED: Must pass the financial_metrics
+       wacc=0.12,                    # Optional: Default is 0.12
+       growth_rate=0.03              # Optional: Default is 0.03
+   )
+   ```
 
-WORKFLOW:
-1. Review acquirer's strategy and identify target companies
-2. For each target:
-   a. Get financial metrics and analyze growth trends, margins, and operational efficiency
-   b. Get balance sheet data to assess financial health and leverage
-   c. Get market data to evaluate current valuation levels
-   d. Perform detailed DCF valuation with sensitivity analysis
-   e. Calculate and analyze trading multiples
-   f. Assess potential synergies quantitatively
-   g. Request comprehensive report generation
-3. Generate final recommendation comparing all targets, including:
-   - Detailed financial analysis and projections
-   - Specific synergy opportunities with dollar values
-   - Risk assessment and mitigation strategies
-   - Strategic fit evaluation
-   - Recommended deal structure and pricing
-4. After final analysis, respond with 'TERMINATE'
+2. Analysis Requirements:
+   - You MUST pass the financial_metrics from step 1 to calculate_dcf
+   - Never call calculate_dcf without financials parameter
+   - Store results for each company for comparison
 
-Ensure all analyses include specific numbers, ratios, and quantitative metrics."""
+3. Required Data Structure:
+   ```python
+   company_analysis = {
+       "symbol": "SYMBOL",
+       "financials": financial_metrics,
+       "balance": balance_sheet,
+       "market": market_data,
+       "dcf": dcf_valuation
+   }
+   ```
+
+4. Example Tool Calls:
+   CORRECT:
+   ```python
+   metrics = await get_financial_metrics("AAPL")
+   dcf = await calculate_dcf(financials=metrics)
+   ```
+
+   INCORRECT (will fail):
+   ```python
+   dcf = await calculate_dcf(wacc=0.12, growth_rate=0.03)  # Missing financials!
+   ```
+
+5. Report Generation:
+   After analyzing all companies, generate:
+   - Individual company reports
+   - Comparative analysis
+   - Final recommendation
+   
+   The complete report MUST be saved using save_complete_report().
+
+OUTPUT FORMAT:
+```markdown
+# Valuation Analysis Report
+
+## Individual Company Analyses
+### [Company Symbol]
+- Financial Metrics Summary
+- Balance Sheet Overview
+- Market Data
+- DCF Valuation Results
+
+## Comparative Analysis
+[Table comparing key metrics across companies]
+
+## Final Recommendation
+[Detailed recommendation with supporting data]
+```
+
+Remember:
+1. Always pass financial_metrics to calculate_dcf
+2. Maintain data between function calls
+3. Validate all data before calculations
+4. Include specific numbers in reports
+5. Document assumptions
+6. Save the complete report using save_complete_report
+
+After completing analysis, respond with 'TERMINATE'"""
 
 REPORTER_PROMPT = """You are a Valuation Report Generator specializing in M&A analysis.
 
-You have access to all analysis tools from the Analyzer, plus:
-1. save_report(report: str, symbol: str) -> str:
-   Saves formatted report to file
+Available Tools:
+1. Data Access:
+   - get_financial_metrics(symbol: str) -> Dict
+     Access historical financial performance
+   - get_balance_sheet_metrics(symbol: str) -> Dict
+     Access balance sheet data
+   - get_market_data(symbol: str) -> Dict
+     Access current market metrics
+   - load_financial_data(symbol: str) -> Dict
+     Access raw financial data
+
+2. Analysis:
+   - calculate_dcf(financials: Dict, wacc: float = 0.12, growth_rate: float = 0.03) -> Dict
+     Calculate company valuation
+   - analyze_comparables(company_data: Dict, target_metrics: List[str]) -> Dict
+     Compare with similar companies
+   - assess_synergies(acquirer_data: Dict, target_data: Dict, strategy: str) -> Dict
+     Evaluate potential synergies
+
+3. Report Generation:
+   - save_complete_report(report: str) -> str
+     Save comprehensive report
+   - generate_final_recommendation(analyzed_companies: List[str]) -> str
+     Generate comparative recommendation
+
+IMPORTANT: Always use save_complete_report for the final comprehensive report.
 
 Report structure:
 1. Company Overview
@@ -103,27 +195,110 @@ Report structure:
 Ensure all reports include specific numbers, charts, and actionable insights."""
 
 
+def register_tools(agent: ConversableAgent, for_llm: bool = True) -> None:
+    """Register all available tools with the agent
+
+    Args:
+        agent: The agent to register tools with
+        for_llm: If True, register for LLM use. If False, register for execution
+    """
+    tools = {
+        "get_financial_metrics": (
+            get_financial_metrics,
+            "Get key financial metrics for analysis",
+        ),
+        "get_balance_sheet_metrics": (
+            get_balance_sheet_metrics,
+            "Get key balance sheet metrics",
+        ),
+        "get_market_data": (get_market_data, "Get current market data"),
+        "calculate_dcf": (
+            calculate_dcf,
+            "Calculate DCF valuation using financial data",
+        ),
+        "analyze_comparables": (
+            analyze_comparables,
+            "Analyze company using market multiples",
+        ),
+        "assess_synergies": (
+            assess_synergies,
+            "Assess potential synergies between acquirer and target",
+        ),
+        "load_financial_data": (
+            load_financial_data,
+            "Load financial data for a given stock symbol",
+        ),
+        "save_complete_report": (
+            save_complete_report,
+            "Save the complete valuation analysis report",
+        ),
+        "generate_final_recommendation": (
+            generate_final_recommendation,
+            "Generate final recommendation comparing all analyzed targets",
+        ),
+    }
+
+    register_func = agent.register_for_llm if for_llm else agent.register_for_execution
+
+    for name, (func, description) in tools.items():
+        if for_llm:
+            register_func(name=name, description=description)(func)
+        else:
+            register_func(name=name)(func)
+
+
+def save_complete_report(report: str) -> str:
+    """Save the complete valuation analysis report"""
+    try:
+        report_path = Path(OUTPUT_DIR) / "valuation.md"
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+
+        recommendation_section = extract_final_recommendation(report)
+        if recommendation_section:
+            recommendation_path = Path(OUTPUT_DIR) / "recommendation.md"
+            with open(recommendation_path, "w", encoding="utf-8") as f:
+                f.write(recommendation_section)
+
+        return "Successfully saved complete valuation report"
+    except Exception as e:
+        return f"Error saving complete report: {str(e)}"
+
+
+def extract_final_recommendation(report: str) -> str:
+    """Extract the final recommendation section from the complete report"""
+    try:
+        start_idx = report.find("## Final Recommendation")
+        if start_idx == -1:
+            return ""
+
+        return report[start_idx:].strip()
+    except Exception as e:
+        return f"Error extracting recommendation: {str(e)}"
+
+
 def calculate_dcf(
     financials: Dict, wacc: float = 0.12, growth_rate: float = 0.03
 ) -> Dict[str, float]:
     """Calculate DCF valuation using financial data"""
     try:
+        if not financials or "yearly_metrics" not in financials:
+            return {"error": "Invalid financial data format"}
 
         metrics = financials.get("yearly_metrics", [])
-
         if not metrics:
             return {"error": "No historical metrics available"}
 
         fcf_data = []
         for year in metrics:
-            if year.get("fcf", 0) != 0:
-                fcf_data.append(float(year.get("fcf", 0)))
+            fcf = year.get("fcf")
+            if fcf and fcf != 0:
+                fcf_data.append(float(fcf))
 
         if not fcf_data:
-
             for year in metrics:
-                ebitda = year.get("ebitda", 0)
-                if ebitda != 0:
+                ebitda = year.get("ebitda")
+                if ebitda and ebitda != 0:
                     estimated_fcf = float(ebitda) * 0.7
                     fcf_data.append(estimated_fcf)
 
@@ -134,7 +309,6 @@ def calculate_dcf(
 
         projection_years = 5
         projected_fcfs = []
-
         for year in range(1, projection_years + 1):
             projected_fcf = base_fcf * (1 + growth_rate) ** year
             projected_fcfs.append(projected_fcf)
@@ -147,7 +321,6 @@ def calculate_dcf(
             pv_fcfs.append(pv)
 
         pv_terminal = terminal_value / (1 + wacc) ** projection_years
-
         enterprise_value = sum(pv_fcfs) + pv_terminal
 
         return {
@@ -246,17 +419,6 @@ def load_financial_data(symbol: str) -> Dict:
         return {"error": f"Invalid JSON data for {symbol}: {str(e)}"}
     except Exception as e:
         return {"error": f"Error loading financial data for {symbol}: {str(e)}"}
-
-
-def save_report(report: str, symbol: str) -> str:
-    """Save the valuation report to a markdown file"""
-    try:
-        report_path = Path(OUTPUT_DIR) / f"{symbol}_valuation.md"
-        with open(report_path, "w", encoding="utf-8") as f:
-            f.write(report)
-        return f"Successfully saved valuation report for {symbol}"
-    except Exception as e:
-        return f"Error saving report: {str(e)}"
 
 
 def get_financial_metrics(symbol: str, years: int = 5) -> Dict:
@@ -510,50 +672,7 @@ class AnalyzerAgent(ConversableAgent):
             llm_config=llm_config,
             human_input_mode="NEVER",
         )
-
-        self.register_for_llm(
-            name="get_financial_metrics",
-            description="Get key financial metrics for analysis",
-        )(get_financial_metrics)
-
-        self.register_for_llm(
-            name="get_balance_sheet_metrics",
-            description="Get key balance sheet metrics",
-        )(get_balance_sheet_metrics)
-
-        self.register_for_llm(
-            name="get_market_data", description="Get current market data"
-        )(get_market_data)
-
-        self.register_for_llm(
-            name="calculate_dcf",
-            description="Calculate DCF valuation using financial data",
-        )(calculate_dcf)
-
-        self.register_for_llm(
-            name="analyze_comparables",
-            description="Analyze company using market multiples",
-        )(analyze_comparables)
-
-        self.register_for_llm(
-            name="assess_synergies",
-            description="Assess potential synergies between acquirer and target",
-        )(assess_synergies)
-
-        self.register_for_llm(
-            name="load_financial_data",
-            description="Load financial data for a given stock symbol",
-        )(load_financial_data)
-
-        self.register_for_llm(
-            name="generate_final_recommendation",
-            description="Generate final recommendation comparing all analyzed targets",
-        )(generate_final_recommendation)
-
-        self.register_for_llm(
-            name="save_final_recommendation",
-            description="Save the final recommendation report",
-        )(save_final_recommendation)
+        register_tools(self, for_llm=True)
 
 
 class ReporterAgent(ConversableAgent):
@@ -571,34 +690,4 @@ class ReporterAgent(ConversableAgent):
             llm_config=llm_config,
             human_input_mode="NEVER",
         )
-
-        self.register_for_execution(
-            name="get_financial_metrics",
-        )(get_financial_metrics)
-        self.register_for_execution(
-            name="get_balance_sheet_metrics",
-        )(get_balance_sheet_metrics)
-        self.register_for_execution(
-            name="get_market_data",
-        )(get_market_data)
-        self.register_for_execution(
-            name="calculate_dcf",
-        )(calculate_dcf)
-        self.register_for_execution(
-            name="analyze_comparables",
-        )(analyze_comparables)
-        self.register_for_execution(
-            name="assess_synergies",
-        )(assess_synergies)
-        self.register_for_execution(
-            name="load_financial_data",
-        )(load_financial_data)
-        self.register_for_execution(
-            name="save_report",
-        )(save_report)
-        self.register_for_execution(
-            name="generate_final_recommendation",
-        )(generate_final_recommendation)
-        self.register_for_execution(
-            name="save_final_recommendation",
-        )(save_final_recommendation)
+        register_tools(self, for_llm=False)

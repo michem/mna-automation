@@ -111,15 +111,6 @@ def main():
         ),
     )
 
-    if chat_result:
-        print(f"Final Report:\n{chat_result.summary}")
-        report_path = Path(OUTPUT_DIR) / "summary.md"
-        with open(report_path, "w", encoding="utf-8") as f:
-            f.write(chat_result.summary)
-        print(f"Final report saved to {report_path}")
-    else:
-        print("Error during report generation.")
-
 
 if __name__ == "__main__":
     main()
