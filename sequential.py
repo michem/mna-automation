@@ -4,12 +4,15 @@ import os
 from pathlib import Path
 
 from autogen import ConversableAgent, UserProxyAgent
+from dotenv import load_dotenv
 
 from agents.collection_agent import DataCollectorAgent, ExecutorAgent
 from agents.strategy_agent import StrategyAgent, save_file
 from agents.valuation_agent import AnalyzerAgent, ReporterAgent
-from agents.web_search_agent import WebSearchAgent, extract_formatted_output
+from agents.web_search_agent import WebSearchAgent
 from config.settings import BASE_CONFIG, OUTPUT_DIR
+
+load_dotenv()
 
 STRATEGY_AGENT_NAME: str = "Strategy_Agent"
 WEB_SEARCH_AGENT_NAME: str = "Web_Search_Agent"
@@ -82,13 +85,10 @@ def main():
         print(f"Error during web search: {web_search_result.get('error')}")
         return
 
-    target_companies_output = extract_formatted_output(web_search_result["content"])
-
     targets_path = Path(OUTPUT_DIR) / "target_companies.md"
-    with open(targets_path, "w", encoding="utf-8") as f:
-        f.write(target_companies_output)
-
-    print(f"Target companies saved to {targets_path}")
+    with open(targets_path, "r", encoding="utf-8") as f:
+        target_companies_output = f.read()
+        print(f"Target companies read from {targets_path}")
 
     chat_result = executor_agent.initiate_chat(
         data_collector_agent,
