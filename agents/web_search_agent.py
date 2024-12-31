@@ -19,6 +19,7 @@ Available Tools:
    - search_companies(sector: str, industry: str, market_cap: str, summary_keywords: str) -> Dict
      Search for companies matching specified criteria
      Returns: {{"success": bool, "data": Dict[str, Any]}}
+     For summary_keywords, use a single keyword or phrase to identify key capabilities. You may use multiple calls with different keywords.
 
 2. Symbol Validation:
    - validate_stock_symbol(symbol: str) -> Dict
