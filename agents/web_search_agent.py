@@ -42,11 +42,12 @@ Process Steps:
 1. Strategy Analysis:
    - Parse strategy document for key requirements
    - Identify target sectors, industries, and market caps
-   - Extract geographic focus and key capabilities
+   - Extract key capabilities and determine summary keywords
    - Document search criteria
 
 2. Company Search:
    - Execute targeted searches using search_companies
+   - Always specifify all arguments for sector, industry, market cap, and summary keywords
    - Validate results using validate_stock_symbol
    - Track promising matches
    - Continue until 5 strong candidates identified
