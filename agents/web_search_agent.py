@@ -12,87 +12,156 @@ from config.settings import BASE_CONFIG, OUTPUT_DIR
 
 DATE = datetime.now().strftime("%B %d, %Y")
 
-ANALYZER_PROMPT = f"""You are a financial analysis expert tasked with analyzing M&A strategies and suggesting appropriate database searches. The year is {DATE}.
+ANALYZER_PROMPT = f"""You are a financial analysis expert tasked with analyzing M&A strategies and identifying potential acquisition targets using specialized database tools. The current date is {DATE}.
 
-FIRST STEP:
-You must start by using the obtain_options tool to get valid search parameters:
+Available Tools:
+1. Company Search:
+   - search_companies(sector: str, industry: str, market_cap: str, summary_keywords: str) -> Dict
+     Search for companies matching specified criteria
+     Returns: {"success": bool, "data": Dict[str, Any]}
 
-SUGGESTED_TOOL: obtain_database_options
-RATIONALE: Need to get valid search parameters before starting company search
+2. Symbol Validation:
+   - validate_stock_symbol(symbol: str) -> Dict
+     Verify if a stock symbol exists in the database
+     Returns: {"success": bool, "exists": bool}
 
-After receiving the options, follow this process:
-1. Analyze the strategy report to identify target company criteria
-2. Suggest appropriate tool calls using ONLY the parameters available in the database
-3. Help refine the search until 5 relevant targets are found
+3. Results Storage:
+   - save_table_to_markdown(content: str) -> str
+     Save final target list in markdown format
+     Returns: Status message
 
-For each subsequent search suggestion, use this format:
-SUGGESTED_TOOL: search_companies
-PARAMETERS: {{
-    "sector": "one from obtained options",
-    "industry": "one from obtained options",
-    "country": "one from obtained options",
-    "market_cap": "one from obtained options",
-    "summary_keywords": "relevant keywords"  # Optional
-}}
-RATIONALE: Brief explanation of why this search matches the strategy
+Valid Database Parameters:
+SECTORS: {{"Communication Services", "Consumer Discretionary", "Consumer Staples", "Energy", "Financials", "Health Care", "Industrials", "Information Technology", "Materials", "Real Estate", "Utilities"}}
 
-Wait for the researcher to execute each suggestion and provide results before making new ones.
-Each suggestion should be focused and specific rather than too broad.
+INDUSTRIES: {{"Aerospace & Defense", "Air Freight & Logistics", "Airlines", "Auto Components", "Automobiles", "Banks", "Beverages", "Biotechnology", "Building Products", "Capital Markets", "Chemicals", "Commercial Services & Supplies", "Communications Equipment", "Construction & Engineering", "Construction Materials", "Consumer Finance", "Distributors", "Diversified Consumer Services", "Diversified Financial Services", "Diversified Telecommunication Services", "Electric Utilities", "Electrical Equipment", "Electronic Equipment, Instruments & Components", "Energy Equipment & Services", "Entertainment", "Equity Real Estate Investment Trusts (REITs)", "Food & Staples Retailing", "Food Products", "Gas Utilities", "Health Care Equipment & Supplies", "Health Care Providers & Services", "Health Care Technology", "Hotels, Restaurants & Leisure", "Household Durables", "Household Products", "IT Services", "Independent Power and Renewable Electricity Producers", "Industrial Conglomerates", "Insurance", "Interactive Media & Services", "Internet & Direct Marketing Retail", "Machinery", "Marine", "Media", "Metals & Mining", "Multi-Utilities", "Oil, Gas & Consumable Fuels", "Paper & Forest Products", "Pharmaceuticals", "Professional Services", "Real Estate Management & Development", "Road & Rail", "Semiconductors & Semiconductor Equipment", "Software", "Specialty Retail", "Technology Hardware, Storage & Peripherals", "Textiles, Apparel & Luxury Goods", "Thrifts & Mortgage Finance", "Tobacco", "Trading Companies & Distributors", "Transportation Infrastructure", "Water Utilities"}}
 
-After finding suitable targets, help verify them with validate_stock_symbol tools.
+MARKET CAPS: {{"Large Cap", "Mega Cap", "Micro Cap", "Mid Cap", "Nano Cap", "Small Cap"}}
 
-REMEMBER:
-- Only use valid parameters from the database options
-- Focus searches based on the strategy's key requirements
-- Ensure suggested companies match strategic fit
-- Help refine searches if initial results aren't suitable"""
+Process Steps:
+1. Strategy Analysis:
+   - Parse strategy document for key requirements
+   - Identify target sectors, industries, and market caps
+   - Extract geographic focus and key capabilities
+   - Document search criteria
 
-RESEARCHER_PROMPT = """You are an M&A research professional who executes company searches and builds target lists based on strategic criteria.
+2. Company Search:
+   - Execute targeted searches using search_companies
+   - Validate results using validate_stock_symbol
+   - Track promising matches
+   - Continue until 5 strong candidates identified
 
-Your responsibilities:
-1. Execute tool calls suggested by the analyzer
-2. Review and summarize search results
-3. Build and maintain a list of potential targets
-4. Format and save the final output
+3. Results Compilation:
+   - Format final list according to template
+   - Save results using save_table_to_markdown
+   - Verify save success
 
-WORKFLOW:
-1. First execute the obtain_database_options tool call when suggested
-2. Share the complete options with the analyzer
-3. Execute subsequent search tool calls
-4. Share result statistics with analyzer (e.g., "Found 25 matches, 10 in target size range")
-5. For promising results, get detailed company info
-6. Maintain running list of best matches
-7. Once 5 suitable targets identified, format output
+Data Validation:
+- Verify sector names match exactly
+- Confirm industry names are from valid list
+- Validate market cap categories
+- Check stock symbols exist
+- Ensure company descriptions match strategy
 
-The final output format must be:
+Required Output Format:
 ```markdown
 # Acquirer
-Company: [Company Name]
-Stock Symbol: [Symbol]
-Description: [Brief description]
+Company: [Exact Name]
+Stock Symbol: [Valid Symbol]
+Description: [Clear Description]
 
 # Target Companies
 | Company Name | Stock Symbol | Description |
 |-------------|--------------|-------------|
-| Company 1   | SYM1         | Description |
-| Company 2   | SYM2         | Description |
-| Company 3   | SYM3         | Description |
-| Company 4   | SYM4         | Description |
-| Company 5   | SYM5         | Description |
+| Name 1      | SYM1         | Description |
+| [... exactly 5 entries ...]
 ```
 
-IMPORTANT:
-- Execute one search at a time
-- Keep track of promising companies
-- Validate symbols before adding to final list
-- Use save_formatted_output when list is complete
-- End with 'TERMINATE' after saving output
+Example Workflow:
+1. Search Implementation:
+   ```python
+   # Search for software companies
+   result = await search_companies(
+       sector="Information Technology",
+       industry="Software",
+       market_cap="Large Cap",
+       summary_keywords="cloud"
+   )
+   if result["success"]:
+       companies = result["data"]
+   ```
 
-Final companies must be:
-- Publicly traded with verified symbols
-- Match strategy requirements
-- Have complete information available
-- Represent diverse opportunities within criteria"""
+2. Symbol Validation:
+   ```python
+   # Validate potential target
+   validation = await validate_stock_symbol("MSFT")
+   if validation["success"] and validation["exists"]:
+       potential_targets.append("MSFT")
+   ```
+
+3. Save Results:
+   ```python
+   # Save final list
+   status = await save_table_to_markdown(formatted_table)
+   if "Successfully saved" in status:
+       return "TERMINATE"
+   ```
+
+Error Handling:
+- Retry failed searches with modified parameters
+- Skip invalid symbols
+- Report data quality issues
+- Document search refinements
+
+Key Reminders:
+1. Use exact parameter names from valid lists
+2. Validate all symbols before including
+3. Maintain clear search rationale
+4. Document all decisions
+5. Ensure exactly 5 final targets
+
+After completing analysis and finding suitable targets, use save_table_to_markdown with the exact format above and respond with 'TERMINATE'.
+"""
+
+RESEARCHER_PROMPT = """You are an M&A research professional who executes company searches and validates potential targets.
+
+PROCESS:
+1. When analyzer suggests a search:
+   - Execute search_companies exactly as specified
+   - Validate results exist and match criteria
+   - Report back: "Found X matches. Notable companies: [2-3 examples]"
+
+2. For promising companies:
+   - Use validate_stock_symbol to confirm symbol
+   - Confirm strategic fit
+
+3. When saving final list:
+   - Execute save_table_to_markdown with exact format
+   - Verify save was successful
+   - Reply only with "TERMINATE"
+
+REQUIREMENTS FOR FINAL TABLE:
+- Must contain exactly 5 companies
+- Each company must have:
+  * Valid, verified stock symbol
+  * Full company name
+  * Clear description emphasizing strategic fit
+- Table must match this exact format:
+
+# Acquirer
+
+Company: [Exact Name]
+Stock Symbol: [Valid Symbol]
+Description: [Clear Description]
+
+# Target Companies
+
+| Company Name | Stock Symbol | Description |
+|-------------|--------------|-------------|
+| Name 1      | SYM1         | Description |
+| Name 2      | SYM2         | Description |
+| Name 3      | SYM3         | Description |
+| Name 4      | SYM4         | Description |
+| Name 5      | SYM5         | Description |"""
 
 
 def obtain_database_options() -> Dict:
@@ -115,7 +184,6 @@ def obtain_database_options() -> Dict:
 def search_companies(
     sector: str = "",
     industry: str = "",
-    country: str = "",
     market_cap: str = "",
     summary_keywords: str = "",
 ) -> Dict:
@@ -125,21 +193,10 @@ def search_companies(
         results = equities.search(
             sector=sector,
             industry=industry,
-            country=country,
             market_cap=market_cap,
             summary=summary_keywords,
         )
         return {"success": True, "data": results.to_dict("index")}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def get_company_info(symbol: str) -> Dict:
-    """Get detailed information about a specific company."""
-    try:
-        equities = fd.Equities()
-        info = equities.select(symbols=[symbol])
-        return {"success": True, "data": info.to_dict("index")}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -154,58 +211,33 @@ def validate_stock_symbol(symbol: str) -> Dict:
         return {"success": False, "error": str(e)}
 
 
-def extract_formatted_output(content: str) -> str:
-    """Extract the formatted output section from the chat content."""
+def save_table_to_markdown(content: str) -> str:
+    """Save the provided table content to target_companies.md file."""
     try:
-        start_idx = content.rfind("# Acquirer")
-        if start_idx == -1:
-            return ""
+        filepath = Path(OUTPUT_DIR) / "target_companies.md"
+        os.makedirs(filepath.parent, exist_ok=True)
 
-        end_idx = content.find("`TERMINATE`", start_idx)
-        if end_idx == -1:
-            return content[start_idx:]
-
-        return content[start_idx:end_idx].strip()
-    except Exception as e:
-        return f"Error extracting output: {str(e)}"
-
-
-def save_formatted_output(content: str, filepath: str) -> str:
-    """Save the formatted output to a file."""
-    try:
-        output = extract_formatted_output(content)
-        if not output:
-            return "Error: No valid formatted output found"
-
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "w", encoding="utf-8") as f:
-            f.write(output)
-        return f"Successfully saved formatted output to {filepath}"
+            f.write(content)
+
+        return "Successfully saved table to target_companies.md"
     except Exception as e:
-        return f"Error saving output: {str(e)}"
+        return f"Error saving table: {str(e)}"
 
 
 class WebSearchAgent:
     AGENT_FUNCTIONS = {
-        "obtain_database_options": (
-            "Get all available search options from database",
-            obtain_database_options,
-        ),
         "search_companies": (
             "Search for companies matching specified criteria",
             search_companies,
         ),
-        # "get_company_info": (
-        #     "Get detailed information about a company",
-        #     get_company_info,
-        # ),
         "validate_stock_symbol": (
             "Validate if a stock symbol exists",
             validate_stock_symbol,
         ),
-        "save_formatted_output": (
-            "Save the formatted company list output",
-            save_formatted_output,
+        "save_table_to_markdown": (
+            "Save the final acquirer and target companies table",
+            save_table_to_markdown,
         ),
     }
 
@@ -252,12 +284,7 @@ class WebSearchAgent:
                 silent=False,
             )
 
-            if hasattr(result, "summary"):
-                formatted_output = extract_formatted_output(result.summary)
-            else:
-                formatted_output = extract_formatted_output(str(result))
-
-            return {"success": True, "content": formatted_output}
+            return {"success": True, "data": result}
 
         except Exception as e:
             return {"success": False, "error": f"An error occurred: {str(e)}"}
