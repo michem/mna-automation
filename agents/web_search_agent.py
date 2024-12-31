@@ -18,12 +18,12 @@ Available Tools:
 1. Company Search:
    - search_companies(sector: str, industry: str, market_cap: str, summary_keywords: str) -> Dict
      Search for companies matching specified criteria
-     Returns: {"success": bool, "data": Dict[str, Any]}
+     Returns: {{"success": bool, "data": Dict[str, Any]}}
 
 2. Symbol Validation:
    - validate_stock_symbol(symbol: str) -> Dict
      Verify if a stock symbol exists in the database
-     Returns: {"success": bool, "exists": bool}
+     Returns: {{"success": bool, "exists": bool}}
 
 3. Results Storage:
    - save_table_to_markdown(content: str) -> str
