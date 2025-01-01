@@ -12,7 +12,7 @@ GEMINI_CONFIG = [
         "model": "gemini-2.0-flash-exp",
         "api_key": GEMINI_API_KEY,
         "api_type": "google",
-        "temperature": 0.7,
+        "temperature": 0,
         "top_p": 0.95,
         "max_tokens": 8192,
     },
@@ -22,7 +22,7 @@ OPENAI_CONFIG = [
     {
         "model": "gpt-4o",
         "api_key": OPENAI_API_KEY,
-        "temperature": 0.7,
+        "temperature": 0,
         "top_p": 0.95,
         "max_tokens": 4096,
         "api_rate_limit": 60.0,
@@ -31,14 +31,14 @@ OPENAI_CONFIG = [
 
 BASE_CONFIG = {
     "config_list": OPENAI_CONFIG,
-    "temperature": 0.7,
+    "temperature": 0,
     "timeout": 60,
     "seed": 42,
 }
 
 BASE_GEMINI = {
     "config_list": GEMINI_CONFIG,
-    "temperature": 0.7,
+    "temperature": 0,
     "timeout": 60,
     "seed": 42,
 }
