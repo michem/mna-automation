@@ -18,8 +18,14 @@ from config.settings import BASE_CONFIG, OUTPUT_DIR
 
 WEB_SURFER_PROMPT = """You are a helpful AI assistant with access to a web browser (via the provided functions). In fact, YOU ARE THE ONLY MEMBER OF YOUR PARTY WITH ACCESS TO A WEB BROWSER, so please help out where you can by performing web searches, navigating pages, and reporting what you find.
 
-When asked to save the final output, use the 'save_to_markdown' tool to save the formatted output to a markdown file.
+When asked to save the final output, use the 'save_to_markdown' tool to save the formatted output to a markdown file. Do not use 'download_file' or 'save_file' tools for this task.
 """
+
+WEB_SURFER_DESC = """A helpful assistant with access to a web browser. Ask them to perform web searches, open pages, navigate to Wikipedia, etc. Once on a desired page, ask them to answer questions by reading the page, generate summaries, find specific words or phrases on the page (ctrl+f), or even just scroll up or down in the viewport.
+
+When asked to save the final output, use the 'save_to_markdown' tool to save the formatted output to a markdown file. Do not use 'download_file' or 'save_file' tools for this task.
+"""
+
 
 RESEARCHER_PROMPT = f"""You are an experienced M&A researcher tasked with finding potential publicly listed acquisition targets based on a strategy report that match the target profile. The year is {DATE}.
 
@@ -166,6 +172,9 @@ IMPORTANT GUIDELINES:
 
 TOOL USAGE:
 - Suggest the 'save_formatted_output' tool call to web_surfer to save the final output to a markdown file
+
+IMPORTANT: When saving the final output to a file, do NOT use 'download_file' or any other tool.
+Always use the 'save_to_markdown' tool to save the formatted output.
 """
 
 
@@ -210,6 +219,7 @@ class WebSearchAgent:
         self.web_surfer = WebSurferAgent(
             name="web_surfer",
             system_message=WEB_SURFER_PROMPT,
+            description=WEB_SURFER_DESC,
             llm_config=llm_config,
             summarizer_llm_config=llm_config,
             human_input_mode="NEVER",
