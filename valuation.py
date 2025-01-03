@@ -9,7 +9,7 @@ from config.settings import OUTPUT_DIR
 
 def read_input_files() -> str:
     """Read both strategy and target companies files"""
-    strategy_path = Path(OUTPUT_DIR) / "strategy_hc.md"
+    strategy_path = Path(OUTPUT_DIR) / "strategy.md"
     targets_path = Path(OUTPUT_DIR) / "target_companies.md"
 
     if not strategy_path.exists():
