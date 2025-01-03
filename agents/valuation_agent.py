@@ -18,82 +18,27 @@ Available Tools:
 1. Data Collection:
    - get_financial_metrics(symbol: str) -> Dict
      Returns revenue, EBITDA, margins, growth rates
-     Example return:
-     {
-       "revenue": [1000000, 1200000, 1500000],  # Last 3 years
-       "ebitda": [200000, 250000, 300000],
-       "margins": {"gross": 0.45, "operating": 0.25, "net": 0.15},
-       "growth_rates": {"revenue": 0.15, "ebitda": 0.12}
-     }
-
    - get_balance_sheet_metrics(symbol: str) -> Dict
      Returns cash, debt, assets, liabilities, equity
-     Example return:
-     {
-       "cash": 500000,
-       "total_debt": 800000,
-       "total_assets": 2000000,
-       "total_liabilities": 1200000,
-       "equity": 800000
-     }
-
    - get_market_data(symbol: str) -> Dict
      Returns price, market cap, P/E ratio, volume
-     Example return:
-     {
-       "price": 45.50,
-       "market_cap": 5000000000,
-       "pe_ratio": 18.5,
-       "volume": 1000000
-     }
-
    - load_financial_data(symbol: str) -> Dict
      Loads raw financial data from storage
-     Returns comprehensive financial data dictionary
 
 2. Analysis:
    - calculate_dcf(financials: Dict, wacc: float = 0.12, growth_rate: float = 0.03) -> Dict
      Performs DCF valuation using provided financials
-     Required financials dict structure:
-     {
-       "revenue": List[float],     # Historical revenues (3+ years)
-       "ebitda": List[float],      # Historical EBITDA (3+ years)
-       "margins": {
-         "gross": float,
-         "operating": float,
-         "net": float
-       },
-       "growth_rates": {
-         "revenue": float,
-         "ebitda": float
-       }
-     }
-     Returns:
-     {
-       "enterprise_value": float,
-       "equity_value": float,
-       "implied_share_price": float,
-       "terminal_value": float,
-       "wacc_used": float,
-       "growth_rate_used": float
-     }
-
    - analyze_comparables(company_data: Dict, target_metrics: List[str]) -> Dict
      Analyzes company using market multiples
-     Required company_data structure must include financials and market data
-     target_metrics example: ["EV/EBITDA", "P/E", "P/S"]
-
    - assess_synergies(acquirer_data: Dict, target_data: Dict, strategy: str) -> Dict
      Assesses potential synergies between companies
-     strategy options: "cost", "revenue", "both"
-     Both data dicts must include complete financials
 
 3. Reporting:
    - save_complete_report(report: str) -> str
      Saves the complete analysis including all companies
    - generate_final_recommendation(analyzed_companies: List[str]) -> str
      Generates final recommendation comparing all targets
-
+     
 CRITICAL: For each company, you must maintain the collected data between function calls. Follow this sequence:
 
 1. Data Collection & Analysis (PER COMPANY):
@@ -115,91 +60,38 @@ CRITICAL: For each company, you must maintain the collected data between functio
    
    # Step 4: Calculate DCF using collected financial_metrics
    dcf_valuation = await calculate_dcf(
-       financials=financial_metrics,  # REQUIRED: Must include revenue, ebitda, margins, growth_rates
+       financials=financial_metrics,  # REQUIRED: Must pass the financial_metrics
        wacc=0.12,                    # Optional: Default is 0.12
        growth_rate=0.03              # Optional: Default is 0.03
    )
    ```
 
 2. Analysis Requirements:
-   - You MUST pass complete financial_metrics to calculate_dcf with all required fields
-   - Validate financial_metrics has required structure before DCF calculation
-   - Never call calculate_dcf without complete financials parameter
+   - You MUST pass the financial_metrics from step 1 to calculate_dcf
+   - Never call calculate_dcf without financials parameter
    - Store results for each company for comparison
 
 3. Required Data Structure:
    ```python
    company_analysis = {
        "symbol": "SYMBOL",
-       "financials": {
-           "revenue": [/* 3+ years */],
-           "ebitda": [/* 3+ years */],
-           "margins": {
-               "gross": float,
-               "operating": float,
-               "net": float
-           },
-           "growth_rates": {
-               "revenue": float,
-               "ebitda": float
-           }
-       },
-       "balance": {
-           "cash": float,
-           "total_debt": float,
-           "total_assets": float,
-           "total_liabilities": float,
-           "equity": float
-       },
-       "market": {
-           "price": float,
-           "market_cap": float,
-           "pe_ratio": float,
-           "volume": float
-       },
-       "dcf": {
-           "enterprise_value": float,
-           "equity_value": float,
-           "implied_share_price": float,
-           "terminal_value": float,
-           "wacc_used": float,
-           "growth_rate_used": float
-       }
+       "financials": financial_metrics,
+       "balance": balance_sheet,
+       "market": market_data,
+       "dcf": dcf_valuation
    }
    ```
 
 4. Example Tool Calls:
    CORRECT:
    ```python
-   # Get data
    metrics = await get_financial_metrics("AAPL")
-   
-   # Validate required fields
-   required_fields = ["revenue", "ebitda", "margins", "growth_rates"]
-   if all(field in metrics for field in required_fields):
-       # Calculate DCF with complete financials
-       dcf = await calculate_dcf(financials=metrics)
-
-   # Analyze comparables with specific metrics
-   comps = await analyze_comparables(
-       company_data={"financials": metrics, "market": market_data},
-       target_metrics=["EV/EBITDA", "P/E"]
-   )
+   dcf = await calculate_dcf(financials=metrics)
    ```
 
    INCORRECT (will fail):
    ```python
-   # Missing financials
-   dcf = await calculate_dcf(wacc=0.12, growth_rate=0.03)
-   
-   # Incomplete financials
-   dcf = await calculate_dcf(financials={"revenue": [1000000]})
-   
-   # Missing required market data
-   comps = await analyze_comparables(
-       company_data={"financials": metrics},
-       target_metrics=["EV/EBITDA"]
-   )
+   dcf = await calculate_dcf(wacc=0.12, growth_rate=0.03)  # Missing financials!
    ```
 
 5. Report Generation:
@@ -229,8 +121,8 @@ OUTPUT FORMAT:
 ```
 
 Remember:
-1. Always validate financial_metrics has complete required structure before DCF
-2. Maintain consistent data structures between function calls
+1. Always pass financial_metrics to calculate_dcf
+2. Maintain data between function calls
 3. Validate all data before calculations
 4. Include specific numbers in reports
 5. Document assumptions
