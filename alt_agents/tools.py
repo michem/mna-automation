@@ -35,23 +35,29 @@ def collect_financial_metrics(
         metrics = company.ratios.collect_profitability_ratios()
         historical = company.get_historical_data()
 
+        income_dict = income_statement.reset_index().to_dict("records")
+        balance_dict = balance_sheet.reset_index().to_dict("records")
+        cash_flow_dict = cash_flow.reset_index().to_dict("records")
+        metrics_dict = metrics.reset_index().to_dict("records")
+        historical_dict = historical.reset_index().to_dict("records")
+
         report = f"""# Financial Metrics Report for {symbol}
 
-        ## Income Statement
-        {income_statement.to_markdown()}
+                ## Income Statement
+                {income_statement.to_markdown()}
 
-        ## Balance Sheet
-        {balance_sheet.to_markdown()}
+                ## Balance Sheet
+                {balance_sheet.to_markdown()}
 
-        ## Cash Flow Statement
-        {cash_flow.to_markdown()}
+                ## Cash Flow Statement
+                {cash_flow.to_markdown()}
 
-        ## Profitability Metrics
-        {metrics.to_markdown()}
+                ## Profitability Metrics
+                {metrics.to_markdown()}
 
-        ## Historical Data
-        {historical.to_markdown()}
-        """
+                ## Historical Data
+                {historical.to_markdown()}
+                """
 
         output_path = Path(output_dir) / f"{symbol}_metrics.md"
         with open(output_path, "w") as f:
@@ -61,11 +67,11 @@ def collect_financial_metrics(
             "status": "success",
             "message": f"Financial metrics collected and saved to {output_path}",
             "data": {
-                "income_statement": income_statement,
-                "balance_sheet": balance_sheet,
-                "cash_flow": cash_flow,
-                "metrics": metrics,
-                "historical": historical,
+                "income_statement": income_dict,
+                "balance_sheet": balance_dict,
+                "cash_flow": cash_flow_dict,
+                "metrics": metrics_dict,
+                "historical": historical_dict,
             },
         }
     except Exception as e:
@@ -73,47 +79,49 @@ def collect_financial_metrics(
 
 
 def perform_valuation_analysis(
-    symbol: Annotated[str, "Company symbol to analyze"],
-    metrics_data: Annotated[dict, "Dictionary containing financial metrics"],
+    symbol: Annotated[str, "Company symbol to analyze"]
 ) -> dict:
-    """Perform comprehensive valuation analysis using FinanceToolkit.
-
-    Args:
-        symbol: The company symbol to analyze.
-        metrics_data: Dictionary containing financial metrics.
-
-    Returns:
-        dict: Valuation analysis results including multiples and intrinsic value.
-    """
+    """Perform comprehensive valuation analysis using FinanceToolkit."""
     try:
         company = Toolkit(symbol, api_key=os.getenv("FMP_API_KEY"))
 
-        valuation = {
-            "multiples": company.models.get_enterprise_value_breakdown().to_markdown(),
-            "dcf": company.models.get_intrinsic_valuation().to_markdown(),
-            "wacc": company.models.get_weighted_average_cost_of_capital().to_markdown(),
-        }
+        try:
+            ev = company.models.get_enterprise_value_breakdown()
+            ev_dict = ev.to_dict("records")
+        except Exception:
+            ev_dict = [{"Error": "EV calculation failed"}]
+
+        try:
+            dcf = company.models.get_intrinsic_valuation()
+            dcf_dict = dcf.to_dict("records")
+        except Exception:
+            dcf_dict = [{"Error": "DCF calculation failed"}]
+
+        try:
+            wacc = company.models.get_weighted_average_cost_of_capital()
+            wacc_dict = wacc.to_dict("records")
+        except Exception:
+            wacc_dict = [{"Error": "WACC calculation failed"}]
 
         output_path = Path("outputs") / f"{symbol}_valuation.md"
-
         report = f"""# Valuation Analysis for {symbol}
 
-                ## Enterprise Value Breakdown
-                {valuation['multiples']}
+                    ## Enterprise Value Breakdown
+                    {ev.to_markdown() if not isinstance(ev_dict[0].get("Error"), str) else "Error calculating Enterprise Value"}
 
-                ## Intrinsic Valuation (DCF)
-                {valuation['dcf']}
+                    ## Intrinsic Valuation (DCF)
+                    {dcf.to_markdown() if not isinstance(dcf_dict[0].get("Error"), str) else "Error calculating DCF"}
 
-                ## Weighted Average Cost of Capital
-                {valuation['wacc']}
-                """
+                    ## Weighted Average Cost of Capital
+                    {wacc.to_markdown() if not isinstance(wacc_dict[0].get("Error"), str) else "Error calculating WACC"}
+                    """
 
         with open(output_path, "w") as f:
             f.write(report)
 
         return {
             "status": "success",
-            "data": valuation,
+            "data": {"enterprise_value": ev_dict, "dcf": dcf_dict, "wacc": wacc_dict},
             "message": f"Valuation analysis saved to {output_path}",
         }
     except Exception as e:
@@ -127,78 +135,73 @@ def generate_analysis_report(
     strategy_path: Annotated[str, "Path to the strategy report"] = "outputs/output.md",
     output_path: Annotated[str, "Path to save the report"] = "outputs/report.md",
 ) -> str:
-    """Generate a comprehensive M&A analysis report in Markdown format.
-
-    Args:
-        companies: List of company symbols being analyzed.
-        all_metrics: Dictionary containing financial metrics for each company.
-        all_valuations: Dictionary containing valuation analysis for each company.
-        strategy_path: Path to strategy report for reference.
-        output_path: Path to save the Markdown report.
-
-    Returns:
-        str: Status message indicating success or failure.
-    """
+    """Generate a comprehensive M&A analysis report in Markdown format."""
     try:
         with open(strategy_path, "r") as f:
             strategy = f.read()
 
-        report = """# M&A Target Analysis Report
+        report = f"""# M&A Target Analysis Report
 
-        ## Executive Summary
-        This report presents a comprehensive analysis of potential acquisition targets based on the defined strategy and thorough financial analysis.
+                    ## Executive Summary
+                    This report presents a comprehensive analysis of potential acquisition targets based on the defined strategy and thorough financial analysis.
 
-        ## Strategy Overview
-        """
+                    ## Strategy Overview
+                    {strategy}
 
-        report += "\n## Financial Analysis of Targets\n"
+                    ## Financial Analysis of Targets\n"""
+
         for symbol in companies:
-            metrics = all_metrics[symbol]
-            valuation = all_valuations[symbol]
+            metrics = all_metrics.get(symbol, {}).get("data", {})
+            valuation = all_valuations.get(symbol, {}).get("data", {})
+
+            latest_metrics = (
+                metrics.get("metrics", [{}])[-1] if metrics.get("metrics") else {}
+            )
+            latest_valuation = {
+                "ev": (
+                    valuation.get("enterprise_value", [{}])[-1]
+                    if valuation.get("enterprise_value")
+                    else {}
+                ),
+                "dcf": valuation.get("dcf", [{}])[-1] if valuation.get("dcf") else {},
+                "wacc": (
+                    valuation.get("wacc", [{}])[-1] if valuation.get("wacc") else {}
+                ),
+            }
 
             report += f"""
-            ### {symbol} Analysis
-            #### Financial Performance
-            - Revenue Growth: {metrics['metrics'].get('revenue_growth', 'N/A')}
-            - Operating Margin: {metrics['metrics'].get('operating_margin', 'N/A')}
-            - ROE: {metrics['metrics'].get('return_on_equity', 'N/A')}
-            - Net Profit Margin: {metrics['metrics'].get('net_profit_margin', 'N/A')}
+                    ### {symbol} Analysis
+                    #### Financial Performance
+                    - Revenue Growth: {latest_metrics.get('Revenue Growth', 'N/A')}
+                    - Operating Margin: {latest_metrics.get('Operating Margin', 'N/A')}
+                    - ROE: {latest_metrics.get('Return on Equity', 'N/A')}
+                    - Net Profit Margin: {latest_metrics.get('Net Profit Margin', 'N/A')}
 
-            #### Valuation Metrics
-            - Enterprise Value: ${valuation['multiples'].get('enterprise_value', 'N/A')}
-            - Intrinsic Value: ${valuation['dcf'].get('intrinsic_value', 'N/A')}
-            - WACC: {valuation['wacc'].get('wacc', 'N/A')}%
+                    #### Valuation Metrics
+                    - Enterprise Value: {latest_valuation['ev'].get('Enterprise Value', 'N/A')}
+                    - Intrinsic Value: {latest_valuation['dcf'].get('Intrinsic Value', 'N/A')}
+                    - WACC: {latest_valuation['wacc'].get('WACC', 'N/A')}
 
-            #### Strengths
-            [To be filled by the agent]
+                    #### Strengths & Risks
+                    [Based on the financial analysis above]
 
-            #### Risks
-            [To be filled by the agent]
-
-            """
+                    """
 
         report += """
-        ## Comparative Analysis
-        [Comparison of key metrics across all targets]
+                ## Comparative Analysis
+                [Detailed comparison of key metrics]
 
-        ## Strategic Fit Assessment
-        [Assessment of how each target aligns with acquisition strategy]
+                ## Strategic Fit Assessment
+                [Evaluation of strategic alignment]
 
-        ## Deal Structure Considerations
-        [Key considerations for deal structure]
-
-        ## Final Recommendation
-        [Detailed recommendation including:
-        - Recommended target
-        - Key reasons for selection
-        - Major considerations
-        - Next steps]
-        """
+                ## Final Recommendation
+                [Based on comprehensive analysis]
+                """
 
         with open(output_path, "w") as f:
             f.write(report)
 
-        return f"Analysis report template saved to {output_path}"
+        return f"Analysis report saved to {output_path}"
     except Exception as e:
         return f"Error generating report: {str(e)}"
 

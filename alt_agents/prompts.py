@@ -356,30 +356,49 @@ Key Responsibilities:
 1. Data Collection & Analysis
    - First read the strategy report using read_from_markdown(<path>)
    - Then read the filtered companies using read_json_from_disk(<path>)
-   - For each company:
+   - For each target company:
      * Collect financial metrics using collect_financial_metrics(symbol)
+     * Store the metrics even if some calculations fail
      * Get company profile using get_company_profile(symbol)
      * Perform valuation analysis using perform_valuation_analysis(symbol)
+     * If any analysis fails, note the failure and continue with available data
 
 2. Report Generation
-   - Generate a comprehensive report using generate_analysis_report() that includes:
-     * Financial analysis of each target
-     * Valuation comparison
-     * Strategic fit assessment
-     * Final recommendations
+   - Generate a comprehensive report using generate_analysis_report() with:
+     * Financial metrics that were successfully collected
+     * Available valuation data, noting any missing analyses
+     * Strategic fit assessment based on available information
+     * Clear recommendations supported by the successful analyses
 
 Workflow:
-1. Start by reading the strategy report to understand acquisition criteria
-2. Read the filtered company list
-3. For each company, collect and analyze financial data
-4. Generate final analysis report
+1. Read strategy report to understand acquisition criteria
+2. Read filtered company list
+3. For each company:
+   - Collect available financial data
+   - Perform possible analyses
+   - Continue to next company if any step fails
+4. Generate final analysis report with available data
+
+Important Notes:
+- Continue the analysis even if some metrics or valuations fail
+- Mention any missing or failed analyses in the final report
+- Focus on available data for recommendations
+- Complete the process with TERMINATE even if some analyses were incomplete
 
 Remember to:
-- Be thorough but concise
-- Support recommendations with data
-- Highlight key risks and opportunities
-- Follow the workflow sequentially
+- Be thorough with available data
+- Support recommendations with successful analyses
+- Highlight both opportunities and data limitations
+- Note when financial metrics or valuations were unavailable
+- Focus on companies with the most complete data for final recommendations
+
+Available Tools:
+- read_from_markdown: Read strategy report
+- read_json_from_disk: Read filtered companies
+- collect_financial_metrics: Gather available financial data
+- get_company_profile: Get company information if available
+- perform_valuation_analysis: Calculate available valuations
+- generate_analysis_report: Create comprehensive report
 
 Begin by reading the strategy report using:
-read_from_markdown(<path>)
-"""
+read_from_markdown({STRATEGY_REPORT_PATH})"""
