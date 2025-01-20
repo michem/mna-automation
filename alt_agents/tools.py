@@ -27,7 +27,7 @@ def collect_financial_metrics(
         dict: Dictionary containing financial metrics and status message.
     """
     try:
-        company = Toolkit(symbol)
+        company = Toolkit(symbol, api_key=os.getenv("FMP_API_KEY"))
 
         income_statement = company.get_income_statement()
         balance_sheet = company.get_balance_sheet_statement()
@@ -86,7 +86,7 @@ def perform_valuation_analysis(
         dict: Valuation analysis results including multiples and intrinsic value.
     """
     try:
-        company = Toolkit(symbol)
+        company = Toolkit(symbol, api_key=os.getenv("FMP_API_KEY"))
 
         valuation = {
             "multiples": company.models.get_enterprise_value_breakdown().to_markdown(),
