@@ -92,8 +92,24 @@ def perform_valuation_analysis(
             ev_dict = [{"Error": "EV calculation failed"}]
 
         try:
-            dcf = company.models.get_intrinsic_valuation()
-            dcf_dict = dcf.to_dict("records")
+            profile = company.get_profile()
+            first_col = profile.columns[0]
+            dcf_value = profile.loc["DCF", first_col]
+            dcf_difference = profile.loc["DCF Difference", first_col]
+
+            dcf_dict = [
+                {
+                    "symbol": symbol,
+                    "dcf_value": dcf_value,
+                    "dcf_difference": dcf_difference,
+                    "current_price": profile.loc["Price", first_col],
+                    "valuation_status": (
+                        "undervalued"
+                        if dcf_value > profile.loc["Price", first_col]
+                        else "overvalued"
+                    ),
+                }
+            ]
         except Exception:
             dcf_dict = [{"Error": "DCF calculation failed"}]
 
@@ -109,8 +125,11 @@ def perform_valuation_analysis(
                     ## Enterprise Value Breakdown
                     {ev.to_markdown() if not isinstance(ev_dict[0].get("Error"), str) else "Error calculating Enterprise Value"}
 
-                    ## Intrinsic Valuation (DCF)
-                    {dcf.to_markdown() if not isinstance(dcf_dict[0].get("Error"), str) else "Error calculating DCF"}
+                    ## DCF Valuation
+                    Current Price: {profile.loc['Price', first_col]}
+                    DCF Value: {dcf_value}
+                    DCF Difference: {dcf_difference}
+                    Valuation Status: {'Undervalued' if dcf_value > profile.loc['Price', first_col] else 'Overvalued'}
 
                     ## Weighted Average Cost of Capital
                     {wacc.to_markdown() if not isinstance(wacc_dict[0].get("Error"), str) else "Error calculating WACC"}
