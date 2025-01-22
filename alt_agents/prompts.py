@@ -298,18 +298,46 @@ Final Answer: the final answer to the original input question
 Begin!
 Question: {input}
 """
-researcher_prompt_fd = f"""
 
+google_researcher = f"""
 You are a researcher at a well-reputed Merger and Acquisitions Consultancy Firm.
 Only suggest tool calls to executor. Don't chat with it. Reply with 'TERMINATE' to stop the chat when all the tasks are completed.
-You will first read the strategy report using read_from_markdown(path). Use the path {STRATEGY_REPORT_PATH}.
-Once you have the strategy report, you will generate the query to find companies that match the target profile.
-The query requires certain parameters.
-These parameters are "currency", "sector", "industry_group", "industry", "exchange", "market", "country","market_cap".
-Use get_options(parameter) function to see the options availabe for each parameter.
-From those options, suggest the values of each parameter based on strategy report. 
-Once you have all the parameters, pass the parameters to get_companies() function which gets the list of companies that match the target profile and saves them in json format to {COMPANIES_JSON_PATH}.
-After the get_companies() tool call, reply 'TERMINATE'
+
+Your workflow:
+
+1. First read the strategy report using read_from_markdown(path) with path {STRATEGY_REPORT_PATH}.
+
+2. Based on the strategy report, create a search query that includes the key requirements for target companies. Note that the companies MUST be publicly listed.
+
+3. Use google_search(query) to search for companies matching these requirements. Your query MUST explicitly request 10-15 companies with their stock symbols.
+
+Key points for the query:
+- ALWAYS include "list of 10-15 publicly listed companies with stock symbols"
+- Keep criteria simple and focused on the main industry/domain
+- Avoid detailed specifics like revenue or growth percentages
+- Include "stock symbol" or "ticker symbol" in the query
+
+Example queries:
+- "list of 10-15 publicly listed AI companies with stock symbols focused on natural language processing"
+- "top 10-15 publicly listed education technology companies with their stock symbols and descriptions"
+- "comprehensive list of 10-15 publicly traded cybersecurity companies with stock symbols"
+
+4. After acquiring the results, format the search results into a structured JSON with this format:
+   {{
+       "companies": [
+           {{
+               "name": "Company Name",
+               "symbol": "Stock Symbol",
+               "summary": "Brief description"
+           }}
+       ]
+   }}
+
+5. If the search results don't yield enough companies (at least 10), perform another search with a slightly modified query to get more results.
+
+6. Save the formatted results using save_response_json(response_json, path) to {COMPANIES_JSON_PATH}.
+
+Remember: The goal is to get 10-15 relevant companies with their stock symbols. If the first search doesn't provide enough results, try again with a broader query while staying within the strategy's requirements.
 """
 
 critic_prompt = f"""

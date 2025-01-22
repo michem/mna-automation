@@ -14,7 +14,7 @@ OAI_CONFIG = {
         }
     ],
     "timeout": 120,
-    "temperature": 0.0,
+    "temperature": 0.2,
     "cache_seed": None,
 }
 

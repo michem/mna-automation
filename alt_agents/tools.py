@@ -378,6 +378,26 @@ def save_response_json(
     print(f"JSON response saved to {path}")
 
 
+def google_search(query: Annotated[str, "Query to search on Google"]) -> str:
+    """Perform a Google search using the GenerativeAI API.
+
+    Args:
+        query (str): The search query.
+
+    Returns:
+        str: The search results.
+    """
+
+    import google.generativeai as genai
+
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+    model = genai.GenerativeModel("gemini-1.5-pro")
+    response = model.generate_content(contents=query, tools="google_search_retrieval")
+
+    return response.text
+
+
 def save_to_markdown(
     content: str,
     file_path: Annotated[str, "Path to save markdown file"] = "outputs/output.md",
