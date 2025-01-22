@@ -147,6 +147,54 @@ def perform_valuation_analysis(
         return {"status": "error", "message": f"Error performing valuation: {str(e)}"}
 
 
+def generate_valuation_report(
+    strategy_path: Annotated[str, "Path to strategy file"] = "outputs/strategy.md",
+    output_path: Annotated[
+        str, "Path to save valuation report"
+    ] = "outputs/valuation.md",
+) -> str:
+    """Generate comprehensive valuation report analyzing all companies."""
+    try:
+        with open(strategy_path, "r") as f:
+            strategy = f.read()
+
+        metrics_files = list(Path("outputs").glob("*_metrics.md"))
+        symbols = [f.stem.split("_")[0] for f in metrics_files]
+
+        report = ["# M&A Target Valuation Report\n"]
+        report.append("## Strategy Overview\n")
+        report.append(strategy)
+        report.append("\n## Company Analysis\n")
+
+        for symbol in symbols:
+            valuation_path = Path("outputs") / f"{symbol}_valuation.md"
+
+            report.append(f"\n### {symbol} Analysis\n")
+
+            if valuation_path.exists():
+                with open(valuation_path, "r") as f:
+                    valuation = f.read()
+                report.append("\n#### Valuation Analysis\n")
+                report.append(valuation)
+
+        report.append("\n## Comparative Analysis\n")
+        report.append("Analysis of key metrics across companies:")
+
+        report.append("\n## Strategic Fit Assessment\n")
+        report.append("Evaluation of each company against strategy requirements:")
+
+        report.append("\n## Final Recommendations\n")
+        report.append("Based on the analysis above, ranked recommendations:")
+
+        with open(output_path, "w") as f:
+            f.write("\n".join(report))
+
+        return f"Valuation report generated at {output_path}"
+
+    except Exception as e:
+        return f"Error generating report: {str(e)}"
+
+
 def generate_analysis_report(
     companies: Annotated[list, "List of company symbols"],
     all_metrics: Annotated[dict, "Dictionary of financial metrics per company"],
