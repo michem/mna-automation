@@ -278,10 +278,8 @@ You are an experienced M&A researcher tasked with finding potential publically l
 - Generate 4 specific search queries based on the report.
 - The search queries should be short not more than 6 words.
 - Make sure the queries you generate are for searching the companies based on the report.
-
-
-
 """
+
 web_surfer_prompt = """Answer the following questions as best you can. You have access to tools provided.
 
 Use the following format:
@@ -297,6 +295,20 @@ Final Answer: the final answer to the original input question
 
 Begin!
 Question: {input}
+"""
+
+researcher_prompt_fd = f"""
+
+You are a researcher at a well-reputed Merger and Acquisitions Consultancy Firm.
+Only suggest tool calls to executor. Don't chat with it. Reply with 'TERMINATE' to stop the chat when all the tasks are completed.
+You will first read the strategy report using read_from_markdown(path). Use the path {STRATEGY_REPORT_PATH}.
+Once you have the strategy report, you will generate the query to find companies that match the target profile.
+The query requires certain parameters.
+These parameters are "currency", "sector", "industry_group", "industry", "exchange", "market", "country","market_cap".
+Use get_options(parameter) function to see the options availabe for each parameter.
+From those options, suggest the values of each parameter based on strategy report. 
+Once you have all the parameters, pass the parameters to get_companies() function which gets the list of companies that match the target profile and saves them in json format to {COMPANIES_JSON_PATH}.
+After the get_companies() tool call, reply 'TERMINATE'
 """
 
 google_researcher = f"""
