@@ -393,22 +393,15 @@ Data Sources:
 - Filtered Companies: Located at {CRITIC_COMPANIES_JSON_PATH}
 
 Key Responsibilities:
-1. Data Collection & Analysis
-   - First read the strategy report using read_from_markdown(<path>)
-   - Then read the filtered companies using read_json_from_disk(<path>)
-   - For each target company:
-     * Collect financial metrics using collect_financial_metrics(symbol)
-     * Store the metrics even if some calculations fail
-     * Get company profile using get_company_profile(symbol)
-     * Perform valuation analysis using perform_valuation_analysis(symbol)
-     * If any analysis fails, note the failure and continue with available data
-
-2. Report Generation
-   - Generate a comprehensive report using generate_analysis_report() with:
-     * Financial metrics that were successfully collected
-     * Available valuation data, noting any missing analyses
-     * Strategic fit assessment based on available information
-     * Clear recommendations supported by the successful analyses
+Data Collection & Analysis
+- First read the strategy report using read_from_markdown(<path>)
+- Then read the filtered companies using read_json_from_disk(<path>)
+- For each target company:
+    * Collect financial metrics using collect_financial_metrics(symbol)
+    * Store the metrics even if some calculations fail
+    * Get company profile using get_company_profile(symbol)
+    * Perform valuation analysis using perform_valuation_analysis(symbol)
+    * If any analysis fails, note the failure and continue with available data
 
 Workflow:
 1. Read strategy report to understand acquisition criteria
@@ -417,20 +410,10 @@ Workflow:
    - Collect available financial data
    - Perform possible analyses
    - Continue to next company if any step fails
-4. Generate final analysis report with available data
+4. At the end, write 'TERMINATE' to stop the chat
 
 Important Notes:
 - Continue the analysis even if some metrics or valuations fail
-- Mention any missing or failed analyses in the final report
-- Focus on available data for recommendations
-- Complete the process with TERMINATE even if some analyses were incomplete
-
-Remember to:
-- Be thorough with available data
-- Support recommendations with successful analyses
-- Highlight both opportunities and data limitations
-- Note when financial metrics or valuations were unavailable
-- Focus on companies with the most complete data for final recommendations
 
 Available Tools:
 - read_from_markdown: Read strategy report
@@ -438,7 +421,6 @@ Available Tools:
 - collect_financial_metrics: Gather available financial data
 - get_company_profile: Get company information if available
 - perform_valuation_analysis: Calculate available valuations
-- generate_analysis_report: Create comprehensive report
 
 Begin by reading the strategy report using:
 read_from_markdown({STRATEGY_REPORT_PATH})"""
@@ -448,7 +430,7 @@ valuation_prompt = f"""You are an expert M&A Valuation Analyst tasked with gener
 Data Sources:
 - Strategy Report: Located at {STRATEGY_REPORT_PATH}
 - Filtered Companies: Located at {CRITIC_COMPANIES_JSON_PATH}
-- Valuation Files: Located in the outputs directory as *_valuation.md where * is the company symbol
+- Valuation Files: Located in the {DATA_COLLECTION_PATH} directory as *_valuation.md where * is the company symbol
 
 Your goal is to:
 1. Analyze financial metrics and valuations for each company

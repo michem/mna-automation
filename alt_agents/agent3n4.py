@@ -8,7 +8,6 @@ from configs import OAI_CONFIG
 from prompts import analyst_prompt
 from tools import (
     collect_financial_metrics,
-    generate_analysis_report,
     get_company_profile,
     perform_valuation_analysis,
     read_from_markdown,
@@ -16,12 +15,6 @@ from tools import (
 )
 
 LLM_CONFIG = OAI_CONFIG
-
-human_proxy = ConversableAgent(
-    "human_proxy",
-    llm_config=LLM_CONFIG,
-    human_input_mode="ALWAYS",
-)
 
 analyst = ConversableAgent(
     "analyst",
@@ -64,13 +57,6 @@ register_function(
 )
 
 register_function(
-    generate_analysis_report,
-    caller=analyst,
-    executor=executor,
-    name="generate_analysis_report",
-    description="Generate comprehensive analysis report",
-)
-register_function(
     read_json_from_disk,
     caller=analyst,
     executor=executor,
@@ -86,19 +72,8 @@ register_function(
     description="Read content from markdown file",
 )
 
-analyst.register_nested_chats(
-    trigger=human_proxy,
-    chat_queue=[
-        {
-            "sender": executor,
-            "recipient": analyst,
-            "message": "Which tool would you like to use?",
-        },
-    ],
-)
-
 if __name__ == "__main__":
-    human_proxy.initiate_chat(
+    executor.initiate_chat(
         analyst,
         message="Begin the analysis process. First, read the strategy report and the screened companies from the outputs directory.",
     )
