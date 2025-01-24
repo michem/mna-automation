@@ -129,11 +129,11 @@ def perform_valuation_analysis(
         except Exception:
             piotroski_dict = [{"Error": "Piotroski score calculation failed"}]
 
-        try:
-            golden = company.models.get_gorden_growth_model()
-            golden_dict = golden.to_dict("records")
-        except Exception:
-            golden_dict = [{"Error": "Gorden growth model calculation failed"}]
+        # try:
+        #     golden = company.models.get_gorden_growth_model()
+        #     golden_dict = golden.to_dict("records")
+        # except Exception:
+        #     golden_dict = [{"Error": "Gorden growth model calculation failed"}]
 
         output_path = Path("outputs/fmp_data") / f"{symbol}_valuation.md"
         report = f"""# Valuation Analysis for {symbol}
@@ -161,9 +161,6 @@ def perform_valuation_analysis(
 
 ## Piotroski Score
 {piotroski.to_markdown() if not isinstance(piotroski_dict[0].get("Error"), str) else "Error calculating Piotroski Score"}
-
-## Gorden Growth Model
-{golden.to_markdown() if not isinstance(golden_dict[0].get("Error"), str) else "Error calculating Gorden Growth Model"}
 """
 
         with open(output_path, "w") as f:
