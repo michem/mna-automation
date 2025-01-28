@@ -106,6 +106,12 @@ def perform_valuation_analysis(
             dupont_dict = [{"Error": "Dupont analysis calculation failed"}]
 
         try:
+            ext_dupont = company.models.get_extended_dupont_analysis()
+            ext_dupont_dict = ext_dupont.to_dict("records")
+        except Exception:
+            ext_dupont_dict = [{"Error": "Extended Dupont analysis calculation failed"}]
+
+        try:
             cap = company.performance.get_capital_asset_pricing_model()
             cap_dict = cap.to_dict("records")
         except Exception:
@@ -118,10 +124,22 @@ def perform_valuation_analysis(
             all_perf_dict = [{"Error": "Performance metrics calculation failed"}]
 
         try:
-            pvgo = company.models.get_present_value_of_growth_opportunities()
-            pvgo_dict = pvgo.to_dict("records")
+            alt_zscore = company.models.get_altman_z_score()
+            alt_zscore_dict = alt_zscore.to_dict("records")
         except Exception:
-            pvgo_dict = [{"Error": "PVGO calculation failed"}]
+            alt_zscore_dict = [{"Error": "Altman Z-Score calculation failed"}]
+
+        try:
+            intrinsic_value = company.models.get_intrinsic_valuation(15, 0.04, 0.094)
+            intrinsic_value_dict = intrinsic_value.to_dict("records")
+        except Exception:
+            intrinsic_value_dict = [{"Error": "Intrinsic Value calculation failed"}]
+
+        # try:
+        #     pvgo = company.models.get_present_value_of_growth_opportunities()
+        #     pvgo_dict = pvgo.to_dict("records")
+        # except Exception:
+        #     pvgo_dict = [{"Error": "PVGO calculation failed"}]
 
         try:
             piotroski = company.models.get_piotroski_score()
@@ -129,11 +147,11 @@ def perform_valuation_analysis(
         except Exception:
             piotroski_dict = [{"Error": "Piotroski score calculation failed"}]
 
-        # try:
-        #     golden = company.models.get_gorden_growth_model()
-        #     golden_dict = golden.to_dict("records")
-        # except Exception:
-        #     golden_dict = [{"Error": "Gorden growth model calculation failed"}]
+        try:
+            gorden = company.models.get_gorden_growth_model(0.15, 0.04)
+            gorden_dict = gorden.to_dict("records")
+        except Exception:
+            gorden_dict = [{"Error": "Gorden growth model calculation failed"}]
 
         output_path = Path("outputs/fmp_data") / f"{symbol}_valuation.md"
         report = f"""# Valuation Analysis for {symbol}
@@ -153,6 +171,15 @@ def perform_valuation_analysis(
 ## Dupont Analysis
 {dupont.to_markdown() if not isinstance(dupont_dict[0].get("Error"), str) else "Error calculating Dupont Analysis"}
 
+## Extended Dupont Analysis
+{ext_dupont.to_markdown() if not isinstance(ext_dupont_dict[0].get("Error"), str) else "Error calculating Extended Dupont Analysis"}
+
+## Altman Z-Score
+{alt_zscore.to_markdown() if not isinstance(alt_zscore_dict[0].get("Error"), str) else "Error calculating Altman Z-Score"}
+
+## Intrinsic Value
+{intrinsic_value.to_markdown() if not isinstance(intrinsic_value_dict[0].get("Error"), str) else "Error calculating Intrinsic Value"}
+
 ## Capital Asset Pricing Model
 {cap.to_markdown() if not isinstance(cap_dict[0].get("Error"), str) else "Error calculating CAPM"}
 
@@ -161,6 +188,9 @@ def perform_valuation_analysis(
 
 ## Piotroski Score
 {piotroski.to_markdown() if not isinstance(piotroski_dict[0].get("Error"), str) else "Error calculating Piotroski Score"}
+
+## Gorden Growth Model
+{gorden.to_markdown() if not isinstance(gorden_dict[0].get("Error"), str) else "Error calculating Gorden Growth Model"}
 """
 
         with open(output_path, "w") as f:
@@ -172,54 +202,6 @@ def perform_valuation_analysis(
         }
     except Exception as e:
         return {"status": "error", "message": f"Error performing valuation: {str(e)}"}
-
-
-def generate_valuation_report(
-    strategy_path: Annotated[str, "Path to strategy file"] = "outputs/strategy.md",
-    output_path: Annotated[
-        str, "Path to save valuation report"
-    ] = "outputs/valuation.md",
-) -> str:
-    """Generate comprehensive valuation report analyzing all companies."""
-    try:
-        with open(strategy_path, "r") as f:
-            strategy = f.read()
-
-        metrics_files = list(Path("outputs/fmp_data").glob("*_metrics.md"))
-        symbols = [f.stem.split("_")[0] for f in metrics_files]
-
-        report = ["# M&A Target Valuation Report\n"]
-        report.append("## Strategy Overview\n")
-        report.append(strategy)
-        report.append("\n## Company Analysis\n")
-
-        for symbol in symbols:
-            valuation_path = Path("outputs/fmp_data") / f"{symbol}_valuation.md"
-
-            report.append(f"\n### {symbol} Analysis\n")
-
-            if valuation_path.exists():
-                with open(valuation_path, "r") as f:
-                    valuation = f.read()
-                report.append("\n#### Valuation Analysis\n")
-                report.append(valuation)
-
-        report.append("\n## Comparative Analysis\n")
-        report.append("Analysis of key metrics across companies:")
-
-        report.append("\n## Strategic Fit Assessment\n")
-        report.append("Evaluation of each company against strategy requirements:")
-
-        report.append("\n## Final Recommendations\n")
-        report.append("Based on the analysis above, ranked recommendations:")
-
-        with open(output_path, "w") as f:
-            f.write("\n".join(report))
-
-        return f"Valuation report generated at {output_path}"
-
-    except Exception as e:
-        return f"Error generating report: {str(e)}"
 
 
 def get_company_profile(symbol: Annotated[str, "Company symbol"]) -> dict:

@@ -443,7 +443,7 @@ Process:
 3. For each company in outputs directory:
    - Read their valuation file (*_valuation.md)
    - Analyze data in context of strategy requirements
-4. Generate a comprehensive valuation report that includes:
+4. Generate a very comprehensive valuation report that includes:
    - Analysis of each company's financials and valuation
    - Comparative analysis across companies
    - Strategic fit assessment
@@ -454,16 +454,9 @@ Available Tools:
 - read_json_from_disk: Read the filtered companies list
 - save_to_markdown: Save the final report to outputs/valuation.md
 
-Focus on:
-- Financial strength vs strategy requirements
-- Growth rates and profitability
-- Valuation multiples and fairness
-- Strategic fit with Microsoft's objectives
-- Risk factors and mitigation
-
 The final report should help decision makers understand:
 - How each company performs financially
-- Which companies best fit the strategy
+- How they align with the acquisition strategy
 - Recommended acquisition targets in priority order
 - Key risks and considerations
 
