@@ -8,11 +8,53 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from financetoolkit import Toolkit
+from smolagents import tool
 from typing_extensions import Annotated
 
 load_dotenv()
 
+from smolagents import Tool
 
+
+@tool
+def human_intervention(
+    scenario: str, message_for_human: str, choices: list = None
+) -> str:
+    """
+    A universal human-in-the-loop tool for various scenarios.
+
+    Args:
+        scenario: The type of human intervention scenario. Must be 'clarification', 'approval', or 'multiple_choice'.
+        message_for_human: The message to be displayed to the human.
+        choices: A list of choices for the 'multiple_choice' scenario.
+    """
+    if scenario not in ["clarification", "approval", "multiple_choice"]:
+        raise ValueError("Must be 'clarification', 'approval', or 'multiple_choice'.")
+
+    print("\n[HUMAN INTERVENTION]")
+    print(f"Scenario: {scenario}")
+    print(f"Agent says: {message_for_human}")
+
+    if scenario == "clarification":
+        user_input = input("\nType your response: ")
+        return user_input
+
+    elif scenario == "approval":
+        print("Type 'YES' or 'NO' to proceed:")
+        user_input = input("Your decision: ").strip().upper()
+        return user_input
+
+    elif scenario == "multiple_choice":
+        if not choices:
+            return "No choices were provided."
+        print("\nAvailable options:")
+        for i, choice in enumerate(choices, start=1):
+            print(f"{i}. {choice}")
+        user_input = input("\nEnter the number of your chosen option: ")
+        return user_input
+
+
+@tool
 def collect_financial_metrics(
     symbol: Annotated[str, "Company symbol to analyze"],
     output_dir: Annotated[str, "Directory to save the output"] = "outputs/fmp_data",
@@ -58,10 +100,18 @@ def collect_financial_metrics(
         return {"status": "error", "message": f"Error collecting metrics: {str(e)}"}
 
 
+@tool
 def perform_valuation_analysis(
     symbol: Annotated[str, "Company symbol to analyze"]
 ) -> dict:
-    """Perform comprehensive valuation analysis using FinanceToolkit."""
+    """Perform comprehensive valuation analysis using FinanceToolkit.
+
+    Args:
+        symbol: The company symbol to analyze.
+
+    Returns:
+        dict: Status message indicating success or error.
+    """
     try:
         company = Toolkit(symbol, api_key=os.getenv("FMP_API_KEY"))
 
@@ -204,6 +254,7 @@ def perform_valuation_analysis(
         return {"status": "error", "message": f"Error performing valuation: {str(e)}"}
 
 
+@tool
 def get_company_profile(symbol: Annotated[str, "Company symbol"]) -> dict:
     """Get company profile information using FinanceToolkit.
 
@@ -225,31 +276,15 @@ def get_company_profile(symbol: Annotated[str, "Company symbol"]) -> dict:
         }
 
 
-def read_companies_list(path: Annotated[str, "Path to companies JSON"]) -> list:
-    """Read list of companies from JSON file.
-
-    Args:
-        path (str): Path to JSON file
-
-    Returns:
-        list: List of company data
-    """
-    try:
-        with open(path, "r") as f:
-            data = json.load(f)
-        return data
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
+@tool
 def generate_comparison_table(valuations: list) -> str:
     """Generate markdown comparison table from valuations.
 
     Args:
-        valuations (list): List of valuation summaries
+        valuations: List of valuation dictionaries.
 
     Returns:
-        str: Markdown formatted table
+        str: Markdown table or error
     """
     try:
         df = pd.DataFrame(valuations)
@@ -259,11 +294,12 @@ def generate_comparison_table(valuations: list) -> str:
         return f"Error generating table: {str(e)}"
 
 
+@tool
 def read_companies_list(path: Annotated[str, "Path to companies JSON"]) -> list:
     """Read list of companies from a JSON file.
 
     Args:
-        path (str): Path to the companies JSON file.
+        path: Path to the companies JSON file.
 
     Returns:
         list: List of companies or an error message.
@@ -276,23 +312,7 @@ def read_companies_list(path: Annotated[str, "Path to companies JSON"]) -> list:
         return {"status": "error", "message": str(e)}
 
 
-def generate_comparison_table(valuations: list) -> str:
-    """Generate a markdown comparison table from valuations.
-
-    Args:
-        valuations (list): List of valuation dictionaries.
-
-    Returns:
-        str: Markdown table as a string or an error message.
-    """
-    try:
-        df = pd.DataFrame(valuations)
-        markdown_table = df.to_markdown(index=False)
-        return markdown_table
-    except Exception as e:
-        return f"Error generating table: {str(e)}"
-
-
+@tool
 def save_response_json(
     response_json: Annotated[str, "JSON String to save"],
     path: Annotated[str, "Path to save"],
@@ -300,8 +320,8 @@ def save_response_json(
     """Save the given JSON string to a file.
 
     Args:
-        response_json (str): The JSON string to be saved.
-        path (str): The path to the file where the JSON string will be saved.
+        response_json: The JSON string to be saved.
+        path: The path to the file where the JSON string will be saved.
     """
     data = json.loads(response_json)
     with open(path, "w") as file:
@@ -311,11 +331,12 @@ def save_response_json(
     return f"JSON response saved to {path}"
 
 
+@tool
 def google_search(query: Annotated[str, "Query to search on Google"]) -> str:
     """Perform a Google search using the GenerativeAI API.
 
     Args:
-        query (str): The search query.
+        query: The search query.
 
     Returns:
         str: The search results.
@@ -331,6 +352,7 @@ def google_search(query: Annotated[str, "Query to search on Google"]) -> str:
     return response.text
 
 
+@tool
 def save_to_markdown(
     content: Annotated[str, "Content to save"],
     file_path: Annotated[str, "Path to save markdown file"] = "outputs/output.md",
@@ -338,8 +360,8 @@ def save_to_markdown(
     """Save the given content to a markdown file, overwriting if it exists.
 
     Args:
-        content (str): The content to be saved.
-        file_path (str, optional): Path to the markdown file. Defaults to "outputs/output.md".
+        content: The content to be saved.
+        file_path: Path to the markdown file. Defaults to "outputs/output.md".
     """
     with open(file_path, "w") as file:
         file.write(content)
@@ -347,13 +369,14 @@ def save_to_markdown(
     return f"Content saved to {file_path}"
 
 
+@tool
 def read_from_markdown(
     filepath: Annotated[str, "Path of Strategy Report"]
 ) -> Annotated[str, "Content of Strategy Report"]:
     """Read the content from a markdown file.
 
     Args:
-        filepath (str): Path to the markdown file.
+        filepath: Path to the markdown file.
 
     Returns:
         str: Content of the markdown file.
@@ -363,25 +386,27 @@ def read_from_markdown(
     return content
 
 
+@tool
 def save_json_to_disk(
     data: dict, file_path: Annotated[str, "Path to save JSON file"] = "data.json"
 ) -> None:
     """Save the given dictionary as a JSON file.
 
     Args:
-        data (dict): The dictionary to be saved.
-        file_path (str, optional): Path to the JSON file. Defaults to "data.json".
+        data: The dictionary to be saved.
+        file_path: Path to the JSON file. Defaults to "data.json".
     """
     with open(file_path, "w") as file:
         json.dump(data, file, indent=4)
     print(f"JSON data written to {file_path}")
 
 
+@tool
 def read_json_from_disk(file_path: Annotated[str, "Path to JSON file"]) -> dict:
     """Read the content from a JSON file.
 
     Args:
-        file_path (str): Path to the JSON file.
+        file_path: Path to the JSON file.
 
     Returns:
         dict: Content of the JSON file.
@@ -393,11 +418,12 @@ def read_json_from_disk(file_path: Annotated[str, "Path to JSON file"]) -> dict:
         return data
 
 
+@tool
 def get_options(parameter: Annotated[str, "Parameter you want options for"]) -> dict:
     """Retrieve options for a given parameter.
 
     Args:
-        parameter (str): The parameter to retrieve options for.
+        parameter: The parameter to retrieve options for.
 
     Returns:
         dict: Options for the specified parameter.
@@ -425,6 +451,7 @@ def convert_ndarray_to_list(data):
         return data
 
 
+@tool
 def get_companies(
     currency: Annotated[str, "Currency"] = "USD",
     sector: Annotated[str, "Sector"] = "Information Technology",
@@ -439,15 +466,15 @@ def get_companies(
     """Filter and save a list of companies based on specified criteria.
 
     Args:
-        currency (str, optional): Currency of companies. Defaults to "USD".
-        sector (str, optional): Sector of companies. Defaults to "Information Technology".
-        industry_group (str, optional): Industry group. Defaults to "Software & Services".
-        industry (str, optional): Industry. Defaults to "Software".
-        exchange (str, optional): Stock exchange. Defaults to "NASDAQ".
-        market (str, optional): Market. Defaults to "us_market".
-        country (str, optional): Country. Defaults to "United States".
-        market_cap (str, optional): Market capitalization. Defaults to "Small Cap".
-        path (str, optional): Path to save JSON file. Defaults to "companies.json".
+        currency: Currency of companies. Defaults to "USD".
+        sector: Sector of companies. Defaults to "Information Technology".
+        industry_group: Industry group. Defaults to "Software & Services".
+        industry: Industry. Defaults to "Software".
+        exchange: Stock exchange. Defaults to "NASDAQ".
+        market: Market. Defaults to "us_market".
+        country: Country. Defaults to "United States".
+        market_cap: Market capitalization. Defaults to "Small Cap".
+        path: Path to save JSON file. Defaults to "companies.json".
 
     Returns:
         str: Completion message.
@@ -477,11 +504,12 @@ def get_companies(
     return f"Companies saved to {path}"
 
 
+@tool
 def get_number_of_companies(path: Annotated[str, "Path to JSON file"]) -> int:
     """Get the number of companies in the JSON file.
 
     Args:
-        path (str): Path to the JSON file.
+        path: Path to the JSON file.
 
     Returns:
         int: Number of companies.
@@ -490,11 +518,12 @@ def get_number_of_companies(path: Annotated[str, "Path to JSON file"]) -> int:
     return len(companies)
 
 
+@tool
 def get_names_and_summaries(path: Annotated[str, "Path to JSON file"]) -> str:
     """Get symbols, names, and summaries of companies from the JSON file.
 
     Args:
-        path (str): Path to the JSON file.
+        path: Path to the JSON file.
 
     Returns:
         str: JSON string with symbols, names, and summaries.
@@ -509,6 +538,7 @@ def get_names_and_summaries(path: Annotated[str, "Path to JSON file"]) -> str:
         return f"Error processing data: {str(e)}"
 
 
+@tool
 def collect_and_save_fmp_data(
     symbol: Annotated[str, "Symbol for which data needs to be collected"],
     path: Annotated[str, "Path to save collected data"],
@@ -516,8 +546,8 @@ def collect_and_save_fmp_data(
     """Collect FMP data and save it, returning a status message.
 
     Args:
-        symbol (str): Symbol to collect data for.
-        path (str): Path to save the collected data.
+        symbol: Symbol to collect data for.
+        path: Path to save the collected data.
 
     Returns:
         str: Status message indicating success or error.

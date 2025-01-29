@@ -1,46 +1,32 @@
-from autogen import ConversableAgent, UserProxyAgent, register_function
-from autogen.tools import Tool
-from configs import OAI_CONFIG
+import os
 
+from dotenv import load_dotenv
+from smolagents import LiteLLMModel, ToolCallingAgent
+
+from config import MODEL_API_KEY, MODEL_ID, STRATEGY_REPORT_PATH
 from prompts import STRATEGY_PROMPT
-from tools import save_to_markdown
+from tools import human_intervention, save_to_markdown
 
-LLM_CONFIG = OAI_CONFIG
-
-
-def is_termination_msg(msg):
-    return (
-        isinstance(msg.get("content"), str)
-        and "TERMINATE" in msg.get("content", "").upper()
-    )
+load_dotenv()
 
 
-pm = ConversableAgent(
-    "pm",
-    system_message=STRATEGY_PROMPT,
-    llm_config=LLM_CONFIG,
-    code_execution_config=False,
-    human_input_mode="NEVER",
+model = LiteLLMModel(
+    model_id=MODEL_ID,
+    api_key=MODEL_API_KEY,
+    temperature=0.2,
+)
+agent = ToolCallingAgent(
+    tools=[save_to_markdown, human_intervention],
+    model=model,
+    system_prompt=STRATEGY_PROMPT,
+    max_steps=20,
 )
 
-user_proxy = UserProxyAgent(
-    name="User",
-    human_input_mode="ALWAYS",
-    llm_config=False,
-    code_execution_config={"use_docker": False},
-    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x["content"],
-)
+conversation_active = True
+output_file = STRATEGY_REPORT_PATH
+first_message = True
 
-register_function(
-    save_to_markdown,
-    caller=pm,
-    executor=user_proxy,
-    name="save_to_markdown",
-    description="Save the given content to a markdown file.",
-)
-
-
-result = user_proxy.initiate_chat(
-    pm,
-    message="Hello",
+response = agent.run(
+    "Hello, I need your help developing and subsequently, saving an acquisition strategy.",
+    reset=False,
 )

@@ -6,9 +6,9 @@ from typing import Annotated
 import autogen
 import pandas as pd
 from autogen import ConversableAgent, register_function
-from configs import OAI_CONFIG
 from typing_extensions import Annotated
 
+from config import OAI_CONFIG
 from prompts import VALUATION_PROMPT
 from tools import read_from_markdown, read_json_from_disk, save_to_markdown
 

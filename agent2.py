@@ -1,7 +1,10 @@
-from autogen import ConversableAgent, register_function
-from configs import OAI_CONFIG
+import os
 
-from prompts import CRITIC_PROMPT, RESEARCHER_PROMPT
+from dotenv import load_dotenv
+from smolagents import LiteLLMModel, ToolCallingAgent
+
+from config import COMPANIES_JSON_PATH, MODEL_API_KEY, MODEL_ID, STRATEGY_REPORT_PATH
+from prompts import RESEARCHER_PROMPT
 from tools import (
     get_companies,
     get_names_and_summaries,
@@ -10,109 +13,31 @@ from tools import (
     save_response_json,
 )
 
-LLM_CONFIG = OAI_CONFIG
+load_dotenv()
 
 
-human_proxy = ConversableAgent(
-    "human_proxy",
-    llm_config=LLM_CONFIG,
-    max_consecutive_auto_reply=0,
-    human_input_mode="NEVER",
+model = LiteLLMModel(
+    model_id=MODEL_ID,
+    api_key=MODEL_API_KEY,
+    temperature=0.2,
 )
-
-researcher = ConversableAgent(
-    "researcher",
-    llm_config=LLM_CONFIG,
-    system_message=RESEARCHER_PROMPT,
-    human_input_mode="NEVER",
-)
-
-critic = ConversableAgent(
-    "critic",
-    llm_config=LLM_CONFIG,
-    system_message=CRITIC_PROMPT,
-    human_input_mode="NEVER",
-)
-
-executor = ConversableAgent(
-    "executor",
-    llm_config=False,
-    human_input_mode="NEVER",
-    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x["content"],
-    default_auto_reply="",
-)
-
-register_function(
-    read_from_markdown,
-    caller=researcher,
-    executor=executor,
-    name="read_from_markdown",
-    description="Read the content from a markdown file.",
-)
-register_function(
-    get_options,
-    caller=researcher,
-    executor=executor,
-    name="get_options",
-    description="Retrieve options for a given parameter.",
-)
-register_function(
-    get_companies,
-    caller=researcher,
-    executor=executor,
-    name="get_companies",
-    description="Retrieve companies based on specified filters.",
-)
-register_function(
-    get_names_and_summaries,
-    caller=researcher,
-    executor=executor,
-    name="get_names_and_summaries",
-    description="Get the names and summaries of companies from the JSON file.",
-)
-
-register_function(
-    read_from_markdown,
-    caller=critic,
-    executor=executor,
-    name="read_from_markdown",
-    description="Read the content from a markdown file.",
-)
-register_function(
-    get_names_and_summaries,
-    caller=critic,
-    executor=executor,
-    name="get_names_and_summaries",
-    description="Get the names and summaries of companies from the JSON file.",
-)
-
-register_function(
-    save_response_json,
-    caller=critic,
-    executor=executor,
-    name="save_response_json",
-    description="Save the given JSON string to a file.",
-)
-
-
-researcher.register_nested_chats(
-    trigger=human_proxy,
-    chat_queue=[
-        {
-            "sender": executor,
-            "recipient": researcher,
-            "message": "Which tool you want to call?",
-            # "max_turns": 5,
-        },
-        {
-            "sender": executor,
-            "recipient": critic,
-            "message": "Which tool you want to call?",
-        },
+research_agent = ToolCallingAgent(
+    tools=[
+        read_from_markdown,
+        get_options,
+        get_companies,
+        get_names_and_summaries,
+        save_response_json,
     ],
+    model=model,
+    system_prompt=RESEARCHER_PROMPT,
+    max_steps=20,
 )
 
-human_proxy.initiate_chat(
-    researcher,
-    message="Hello",
+conversation_active = True
+output_file = COMPANIES_JSON_PATH
+first_message = True
+
+research_response = research_agent.run(
+    "Please start the research process based on the strategy report.", reset=False
 )

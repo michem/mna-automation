@@ -6,7 +6,7 @@ import autogen
 from autogen import ConversableAgent, UserProxyAgent, register_function
 from dotenv import load_dotenv
 
-from configs import (
+from config import (
     COMPANIES_JSON_PATH,
     CRITIC_COMPANIES_JSON_PATH,
     OAI_CONFIG,
