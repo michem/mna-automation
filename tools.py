@@ -308,6 +308,8 @@ def save_response_json(
         json.dump(data, file, indent=4)
     print(f"JSON response saved to {path}")
 
+    return f"JSON response saved to {path}"
+
 
 def google_search(query: Annotated[str, "Query to search on Google"]) -> str:
     """Perform a Google search using the GenerativeAI API.
@@ -330,9 +332,9 @@ def google_search(query: Annotated[str, "Query to search on Google"]) -> str:
 
 
 def save_to_markdown(
-    content: str,
+    content: Annotated[str, "Content to save"],
     file_path: Annotated[str, "Path to save markdown file"] = "outputs/output.md",
-) -> None:
+) -> str:
     """Save the given content to a markdown file, overwriting if it exists.
 
     Args:
@@ -341,7 +343,8 @@ def save_to_markdown(
     """
     with open(file_path, "w") as file:
         file.write(content)
-    print(f"Content written to {file_path}")
+
+    return f"Content saved to {file_path}"
 
 
 def read_from_markdown(
@@ -400,7 +403,7 @@ def get_options(parameter: Annotated[str, "Parameter you want options for"]) -> 
         dict: Options for the specified parameter.
     """
     options = fd.obtain_options("equities")
-    return convert_ndarray_to_list(options[parameter])
+    return {"options": convert_ndarray_to_list(options[parameter])}
 
 
 def convert_ndarray_to_list(data):
@@ -462,13 +465,8 @@ def get_companies(
         & (companies["market_cap"] == market_cap)
     ]
 
-    # Drop rows with NaN values in the 'summary' column
     filtered_companies = filtered_companies.dropna(subset=["summary"])
 
-    # Save the filtered DataFrame to a CSV file
-    filtered_companies.to_csv("companies.csv", index=True)
-
-    # Convert the filtered DataFrame to JSON and save to a file
     with open(path, "w") as file:
         json.dump(
             json.loads(filtered_companies.reset_index().to_json(orient="records")),
@@ -476,8 +474,7 @@ def get_companies(
             indent=4,
         )
 
-    return "Done"
-    # return filtered_companies
+    return f"Companies saved to {path}"
 
 
 def get_number_of_companies(path: Annotated[str, "Path to JSON file"]) -> int:
@@ -502,10 +499,14 @@ def get_names_and_summaries(path: Annotated[str, "Path to JSON file"]) -> str:
     Returns:
         str: JSON string with symbols, names, and summaries.
     """
-    companies = read_json_from_disk(path)
-    df = pd.DataFrame(companies, columns=["symbol", "name", "summary"])
-    df = df.reset_index(drop=True)
-    return df.to_json(orient="records", indent=4)
+    try:
+        data = read_json_from_disk(path)
+        companies = data.get("data", [])
+        df = pd.DataFrame(companies, columns=["symbol", "name", "summary"])
+        df = df.reset_index(drop=True)
+        return df.to_json(orient="records", indent=4)
+    except Exception as e:
+        return f"Error processing data: {str(e)}"
 
 
 def collect_and_save_fmp_data(

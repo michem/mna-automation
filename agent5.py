@@ -9,7 +9,7 @@ from autogen import ConversableAgent, register_function
 from configs import OAI_CONFIG
 from typing_extensions import Annotated
 
-from prompts import valuation_prompt
+from prompts import VALUATION_PROMPT
 from tools import read_from_markdown, read_json_from_disk, save_to_markdown
 
 LLM_CONFIG = OAI_CONFIG
@@ -18,7 +18,7 @@ LLM_CONFIG = OAI_CONFIG
 analyzer = ConversableAgent(
     "analyzer",
     llm_config=LLM_CONFIG,
-    system_message=valuation_prompt,
+    system_message=VALUATION_PROMPT,
     human_input_mode="NEVER",
 )
 

@@ -1,19 +1,8 @@
-import os
-
-import autogen
 from autogen import ConversableAgent, register_function
-from configs import GEMINI_CONFIG, OAI_CONFIG
+from configs import OAI_CONFIG
 
-from prompts import critic_prompt, researcher_prompt_fd
-from tools import (
-    get_companies,
-    get_names_and_summaries,
-    get_number_of_companies,
-    get_options,
-    read_from_markdown,
-    save_response_json,
-    save_to_markdown,
-)
+from prompts import CRITIC_PROMPT, GOOGLE_RESEARCHER
+from tools import google_search, read_from_markdown, save_response_json
 
 LLM_CONFIG = OAI_CONFIG
 
@@ -27,14 +16,14 @@ human_proxy = ConversableAgent(
 researcher = ConversableAgent(
     "researcher",
     llm_config=LLM_CONFIG,
-    system_message=researcher_prompt_fd,
+    system_message=GOOGLE_RESEARCHER,
     human_input_mode="NEVER",
 )
 
 critic = ConversableAgent(
     "critic",
     llm_config=LLM_CONFIG,
-    system_message=critic_prompt,
+    system_message=CRITIC_PROMPT,
     human_input_mode="NEVER",
 )
 
@@ -56,28 +45,19 @@ register_function(
     description="Read the content from a markdown file.",
 )
 register_function(
-    get_options,
+    google_search,
     caller=researcher,
     executor=executor,
-    name="get_options",
-    description="Retrieve options for a given parameter.",
+    name="google_search",
+    description="Search the web for a given string and return the results.",
 )
 register_function(
-    get_companies,
-    caller=researcher,  # Add multiple callers here
+    save_response_json,
+    caller=researcher,
     executor=executor,
-    name="get_companies",
-    description="Retrieve companies based on specified filters.",
+    name="save_response_json",
+    description="Save the given JSON string to a file.",
 )
-register_function(
-    get_names_and_summaries,
-    caller=researcher,  # Add multiple callers here
-    executor=executor,
-    name="get_names_and_summaries",
-    description="Get the names and summaries of companies from the JSON file.",
-)
-
-## Critic Functions
 
 register_function(
     read_from_markdown,
@@ -86,17 +66,10 @@ register_function(
     name="read_from_markdown",
     description="Read the content from a markdown file.",
 )
-register_function(
-    get_names_and_summaries,
-    caller=critic,  # Add multiple callers here
-    executor=executor,
-    name="get_names_and_summaries",
-    description="Get the names and summaries of companies from the JSON file.",
-)
 
 register_function(
     save_response_json,
-    caller=critic,  # Add multiple callers here
+    caller=critic,
     executor=executor,
     name="save_response_json",
     description="Save the given JSON string to a file.",

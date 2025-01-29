@@ -1,15 +1,13 @@
-import os
-
-import autogen
 from autogen import ConversableAgent, register_function
-from configs import GEMINI_CONFIG, OAI_CONFIG
+from configs import OAI_CONFIG
 
-from prompts import critic_prompt, google_researcher
+from prompts import CRITIC_PROMPT, RESEARCHER_PROMPT
 from tools import (
-    google_search,
+    get_companies,
+    get_names_and_summaries,
+    get_options,
     read_from_markdown,
     save_response_json,
-    save_to_markdown,
 )
 
 LLM_CONFIG = OAI_CONFIG
@@ -18,30 +16,29 @@ LLM_CONFIG = OAI_CONFIG
 human_proxy = ConversableAgent(
     "human_proxy",
     llm_config=LLM_CONFIG,
-    human_input_mode="ALWAYS",  # always ask for human input
+    max_consecutive_auto_reply=0,
+    human_input_mode="NEVER",
 )
 
 researcher = ConversableAgent(
     "researcher",
     llm_config=LLM_CONFIG,
-    system_message=google_researcher,
+    system_message=RESEARCHER_PROMPT,
     human_input_mode="NEVER",
 )
 
 critic = ConversableAgent(
     "critic",
     llm_config=LLM_CONFIG,
-    system_message=critic_prompt,
+    system_message=CRITIC_PROMPT,
     human_input_mode="NEVER",
 )
-
 
 executor = ConversableAgent(
     "executor",
     llm_config=False,
     human_input_mode="NEVER",
-    is_termination_msg=lambda msg: msg.get("content") is not None
-    and "TERMINATE" in msg["content"],
+    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x["content"],
     default_auto_reply="",
 )
 
@@ -53,18 +50,25 @@ register_function(
     description="Read the content from a markdown file.",
 )
 register_function(
-    google_search,
+    get_options,
     caller=researcher,
     executor=executor,
-    name="google_search",
-    description="Search the web for a given string and return the results.",
+    name="get_options",
+    description="Retrieve options for a given parameter.",
 )
 register_function(
-    save_response_json,
+    get_companies,
     caller=researcher,
     executor=executor,
-    name="save_response_json",
-    description="Save the given JSON string to a file.",
+    name="get_companies",
+    description="Retrieve companies based on specified filters.",
+)
+register_function(
+    get_names_and_summaries,
+    caller=researcher,
+    executor=executor,
+    name="get_names_and_summaries",
+    description="Get the names and summaries of companies from the JSON file.",
 )
 
 register_function(
@@ -73,6 +77,13 @@ register_function(
     executor=executor,
     name="read_from_markdown",
     description="Read the content from a markdown file.",
+)
+register_function(
+    get_names_and_summaries,
+    caller=critic,
+    executor=executor,
+    name="get_names_and_summaries",
+    description="Get the names and summaries of companies from the JSON file.",
 )
 
 register_function(

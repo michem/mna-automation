@@ -5,7 +5,7 @@ import autogen
 from autogen import ConversableAgent, register_function
 from configs import OAI_CONFIG
 
-from prompts import analyst_prompt
+from prompts import ANALYST_PROMPT
 from tools import (
     collect_financial_metrics,
     get_company_profile,
@@ -19,7 +19,7 @@ LLM_CONFIG = OAI_CONFIG
 analyst = ConversableAgent(
     "analyst",
     llm_config=LLM_CONFIG,
-    system_message=analyst_prompt,
+    system_message=ANALYST_PROMPT,
     human_input_mode="NEVER",
 )
 
