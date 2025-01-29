@@ -22,10 +22,6 @@ agent = ToolCallingAgent(
     max_steps=20,
 )
 
-conversation_active = True
-output_file = STRATEGY_REPORT_PATH
-first_message = True
-
 response = agent.run(
     "Hello, I need your help developing and subsequently, saving an acquisition strategy.",
     reset=False,
