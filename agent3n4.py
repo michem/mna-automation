@@ -3,8 +3,8 @@ from pathlib import Path
 
 import autogen
 from autogen import ConversableAgent, register_function
-from configs import OAI_CONFIG
 
+from configs import OAI_CONFIG
 from prompts import ANALYST_PROMPT
 from tools import (
     collect_financial_metrics,
