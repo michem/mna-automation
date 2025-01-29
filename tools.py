@@ -315,13 +315,13 @@ def read_companies_list(path: Annotated[str, "Path to companies JSON"]) -> list:
 @tool
 def save_response_json(
     response_json: Annotated[str, "JSON String to save"],
-    path: Annotated[str, "Path to save"],
+    path: Annotated[str, "Path to save"] = "outputs/companies.json",
 ) -> None:
-    """Save the given JSON string to a file.
+    """Save the given JSON string to a file at the specified path.
 
     Args:
         response_json: The JSON string to be saved.
-        path: The path to the file where the JSON string will be saved.
+        path: The path to the file where the JSON string will be saved. Defaults to "outputs/companies.json".
     """
     data = json.loads(response_json)
     with open(path, "w") as file:

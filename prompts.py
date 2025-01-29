@@ -39,13 +39,18 @@ The query requires certain parameters, namely "currency", "sector", "industry_gr
 
 Use get_options(parameter) function to see the options availabe for each parameter.
 
-From those options, suggest the values of each parameter based on strategy report.
+From those options, suggest the values of each parameter based on strategy report. 
 
-Once you have all the parameters, pass the parameters to get_companies() function which gets the list of companies that match the target profile and saves them in JSON format to "outputs/companies.json" file using save_response_json(response_json, path).
+Once you have all the parameters, pass the parameters to get_companies() function which gets the list of companies that match the target profile and saves them in JSON format to "outputs/companies.json".
+"""
 
----------------
+CRITIC_PROMPT = """You are a diligent critic. Your job is to indentify the companies that match the client's requirements.
 
-After saving the companies, move on to filtering the companies based on the client's requirements. Change your role to act as a diligent critic, and your job is to indentify the companies that match the client's requirements.
+You have access to these tools:
+
+{{tool_descriptions}}
+
+{{managed_agents_descriptions}}
 
 Folow the steps below:
 
@@ -54,9 +59,8 @@ Folow the steps below:
 3. List the companies whose summaries match client's "Business Goals and Objectives. Explain why do you think so.
 4. If you don't find any companies that match the client's requirements, stop the chat.
 
-Save your response (symbol, name, summary, reason) in JSON format using the function save_response_json(response_json, path) to "outputs/critic_companies.json".
+Save your response (symbol, name, summary, reason) in JSON format using the function save_response_json(response, path) to "outputs/critic_companies.json".
 """
-
 
 GOOGLE_RESEARCHER = """
 You are a researcher at a well-reputed Merger and Acquisitions consultancy firm.
