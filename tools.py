@@ -109,7 +109,14 @@ def collect_financial_metrics(
 def perform_valuation_analysis(
     symbol: Annotated[str, "Company symbol to analyze"]
 ) -> dict:
-    """Perform comprehensive valuation analysis using FinanceToolkit."""
+    """Perform comprehensive valuation analysis using FinanceToolkit.
+
+    Args:
+        symbol: The company symbol to analyze.
+
+    Returns:
+        dict: Dictionary containing valuation results and status message.
+    """
     try:
         company = Toolkit(symbol, api_key=os.getenv("FMP_API_KEY"))
         fin_models = FinModelsTools(os.getenv("FMP_API_KEY"))
@@ -501,21 +508,20 @@ def read_from_json(file_path: Annotated[str, "Path to JSON file"]) -> dict:
 
 @tool
 def save_to_json(
-    response_json: Annotated[str, "JSON string to save"],
-    path: Annotated[str, "Path to save"],
+    string: Annotated[str, "String to save as JSON"],
+    path: Annotated[str, "Path to save JSON file to"],
 ) -> None:
-    """Save the given JSON string to a file at the specified path.
+    """Save the given string as a JSON file. Conversion is automatically handled.
 
     Args:
-        response_json: The JSON string to be saved.
-        path: The path to the file where the JSON string will be saved..
+        string: The string to save as JSON.
+        path: The path to the file where the JSON string will be saved.
     """
-    data = json.loads(response_json)
+    data = json.loads(string)
     with open(path, "w") as file:
         json.dump(data, file, indent=4)
-    print(f"JSON response saved to {path}")
 
-    return f"JSON response saved to {path}"
+    return f"Data saved to {path}"
 
 
 @tool
@@ -553,27 +559,27 @@ def convert_ndarray_to_list(data):
 
 @tool
 def get_companies(
+    path: Annotated[str, "Path to save JSON file"],
     currency: Annotated[str, "Currency"] = "USD",
     sector: Annotated[str, "Sector"] = "Information Technology",
     industry_group: Annotated[str, "Industry Group"] = "Software & Services",
     industry: Annotated[str, "Industry"] = "Software",
     country: Annotated[str, "Country"] = "United States",
     market_cap: Annotated[str, "Market Cap"] = "Small Cap",
-    path: Annotated[str, "Path to save JSON file"] = "companies.json",
 ) -> str:
     """Filter and save a list of companies based on specified criteria.
 
     Args:
+        path: Path to save JSON file to.
         currency: Currency of companies. Defaults to "USD".
         sector: Sector of companies. Defaults to "Information Technology".
         industry_group: Industry group. Defaults to "Software & Services".
         industry: Industry. Defaults to "Software".
         country: Country. Defaults to "United States".
         market_cap: Market capitalization. Defaults to "Small Cap".
-        path: Path to save JSON file. Defaults to "companies.json".
 
     Returns:
-        str: Completion message.
+        str: Completion message
     """
     equities = fd.Equities()
     companies = equities.select()

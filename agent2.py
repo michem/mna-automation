@@ -1,9 +1,16 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel, ManagedAgent
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
-from prompts import RESEARCHER_PROMPT
-from tools import 
+from prompts import CRITIC_PROMPT, RESEARCHER_PROMPT
+from tools import (
+    get_companies,
+    get_names_and_summaries,
+    get_options,
+    read_from_json,
+    read_from_markdown,
+    save_to_json,
+)
 
 load_dotenv()
 
@@ -14,9 +21,8 @@ model = LiteLLMModel(
     temperature=0.0,
 )
 researcher = CodeAgent(
-    tools=[],
+    tools=[get_companies, read_from_markdown, get_options, save_to_json],
     model=model,
-    additional_authorized_imports=["json", "os"],
     max_steps=15,
 )
 managed_researcher = ManagedAgent(
@@ -25,7 +31,22 @@ managed_researcher = ManagedAgent(
     description=RESEARCHER_PROMPT,
 )
 
-response = researcher.run(
+critic = ToolCallingAgent(
+    tools=[get_names_and_summaries, read_from_json, save_to_json, read_from_markdown],
+    model=model,
+    max_steps=10,
+)
+managed_critic = ManagedAgent(
+    agent=critic,
+    name="critic",
+    description=CRITIC_PROMPT,
+)
+
+res_response = researcher.run(
     RESEARCHER_PROMPT,
+    reset=False,
+)
+crt_response = critic.run(
+    CRITIC_PROMPT,
     reset=False,
 )

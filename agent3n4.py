@@ -1,10 +1,7 @@
-import os
-from pathlib import Path
+from dotenv import load_dotenv
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
 
-import autogen
-from autogen import ConversableAgent, register_function
-
-from config import OAI_CONFIG
+from config import MODEL_API_KEY, MODEL_ID
 from prompts import ANALYST_PROMPT
 from tools import (
     collect_financial_metrics,
@@ -14,66 +11,32 @@ from tools import (
     read_from_markdown,
 )
 
-LLM_CONFIG = OAI_CONFIG
+load_dotenv()
 
-analyst = ConversableAgent(
-    "analyst",
-    llm_config=LLM_CONFIG,
-    system_message=ANALYST_PROMPT,
-    human_input_mode="NEVER",
+
+model = LiteLLMModel(
+    model_id=MODEL_ID,
+    api_key=MODEL_API_KEY,
+    temperature=0.0,
+)
+analyst = ToolCallingAgent(
+    tools=[
+        collect_financial_metrics,
+        get_company_profile,
+        perform_valuation_analysis,
+        read_from_json,
+        read_from_markdown,
+    ],
+    model=model,
+    max_steps=20,
+)
+managed_analyst = ManagedAgent(
+    agent=analyst,
+    name="analyst",
+    description=ANALYST_PROMPT,
 )
 
-executor = ConversableAgent(
-    "executor",
-    llm_config=False,
-    human_input_mode="NEVER",
-    is_termination_msg=lambda msg: msg.get("content") is not None
-    and "TERMINATE" in msg["content"],
-    default_auto_reply="",
+response = analyst.run(
+    ANALYST_PROMPT,
+    reset=False,
 )
-
-register_function(
-    collect_financial_metrics,
-    caller=analyst,
-    executor=executor,
-    name="collect_financial_metrics",
-    description="Collect financial metrics for a company",
-)
-
-register_function(
-    get_company_profile,
-    caller=analyst,
-    executor=executor,
-    name="get_company_profile",
-    description="Get company profile information",
-)
-
-register_function(
-    perform_valuation_analysis,
-    caller=analyst,
-    executor=executor,
-    name="perform_valuation_analysis",
-    description="Perform valuation analysis on collected metrics",
-)
-
-register_function(
-    read_from_json,
-    caller=analyst,
-    executor=executor,
-    name="read_from_json",
-    description="Read JSON data from disk",
-)
-
-register_function(
-    read_from_markdown,
-    caller=analyst,
-    executor=executor,
-    name="read_from_markdown",
-    description="Read content from markdown file",
-)
-
-if __name__ == "__main__":
-    executor.initiate_chat(
-        analyst,
-        message="Begin the analysis process. First, read the strategy report and the screened companies from the outputs directory.",
-    )

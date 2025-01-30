@@ -1,61 +1,30 @@
-# agent5.py
+from dotenv import load_dotenv
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
 
-from pathlib import Path
-from typing import Annotated
-
-import autogen
-import pandas as pd
-from autogen import ConversableAgent, register_function
-from typing_extensions import Annotated
-
-from config import OAI_CONFIG
+from config import MODEL_API_KEY, MODEL_ID
 from prompts import VALUATION_PROMPT
 from tools import read_from_json, read_from_markdown, save_to_markdown
 
-LLM_CONFIG = OAI_CONFIG
+load_dotenv()
 
 
-analyzer = ConversableAgent(
-    "analyzer",
-    llm_config=LLM_CONFIG,
-    system_message=VALUATION_PROMPT,
-    human_input_mode="NEVER",
+model = LiteLLMModel(
+    model_id=MODEL_ID,
+    api_key=MODEL_API_KEY,
+    temperature=0.2,
+)
+valuator = ToolCallingAgent(
+    tools=[read_from_markdown, read_from_json, save_to_markdown],
+    model=model,
+    max_steps=20,
+)
+managed_valuator = ManagedAgent(
+    agent=valuator,
+    name="valuator",
+    description=VALUATION_PROMPT,
 )
 
-executor = ConversableAgent(
-    "executor",
-    llm_config=False,
-    human_input_mode="NEVER",
-    is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x["content"],
-    default_auto_reply="",
+response = valuator.run(
+    VALUATION_PROMPT,
+    reset=False,
 )
-
-register_function(
-    read_from_markdown,
-    caller=analyzer,
-    executor=executor,
-    name="read_from_markdown",
-    description="Read markdown file content",
-)
-
-register_function(
-    read_from_json,
-    caller=analyzer,
-    executor=executor,
-    name="read_from_json",
-    description="Read JSON data from disk",
-)
-
-register_function(
-    save_to_markdown,
-    caller=analyzer,
-    executor=executor,
-    name="save_to_markdown",
-    description="Save content to markdown file",
-)
-
-if __name__ == "__main__":
-    analyzer.initiate_chat(
-        executor,
-        message="Generate comprehensive valuation report analyzing all companies against the acquisition strategy.",
-    )
