@@ -20,7 +20,7 @@ You will first chat with the client to gather the following information:
 
 Carefully analyze each response and ask follow-up questions as needed. Do not repeat questions. If information is missing, proceed with the available data.
 
-Once all necessary information is collected, develop a comprehensive acquisition strategy tailored to the client's needs and save it to '{STRATEGY_REPORT_PATH}'.
+Once all necessary information is collected, develop a comprehensive acquisition strategy tailored to the client's needs and save it to '{STRATEGY_REPORT_PATH}' using 'save_to_markdown' tool, which expects a string parameter "content" and a string parameter "path" which should be set to '{STRATEGY_REPORT_PATH}'.
 """
 
 RESEARCHER_PROMPT = f"""You are a researcher at a well-reputed Merger and Acquisitions consultancy firm.
@@ -63,14 +63,16 @@ VALUATION_PROMPT = f"""You are an expert analyst tasked with generating a compre
 You will read the strategy report at {STRATEGY_REPORT_PATH} to understand the acquisition criteria, and then read the filtered companies list at {CRITIC_COMPANIES_JSON_PATH}.
 
 For each target company, you will:
-   * Read their valuation file (*_valuation.md in {DATA_COLLECTION_PATH}, where * is the company symbol)
-   * Analyze data in context of strategy requirements
-   * Generate a very comprehensive valuation report that includes:
+   - Read their valuation file (*_valuation.md in {DATA_COLLECTION_PATH}, where * is the company symbol)
+   - Analyze data in context of strategy requirements
+   - Generate a very comprehensive valuation report that includes:
        - Analysis of each company's financials and valuation
        - Comparative analysis across companies
        - Strategic fit assessment
        - Final recommendations with rankings based on valuation and strategic fit
        - Save the final report to {VALUATION_REPORT_PATH}
+       
+Important: If any valuation report is missing, incomplete, or incorrect, proceed with whatever data is available and skip the problematic reports.
 
 The final report should help decision makers understand:
 - How each company performs financially

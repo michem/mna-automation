@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel
+from smolagents import CodeAgent, LiteLLMModel, ToolCallingAgent
 
 from agent1 import managed_strategist
 from agent2 import managed_critic, managed_researcher
@@ -33,7 +33,7 @@ manager = CodeAgent(
         managed_analyst,
         managed_valuator,
     ],
-    max_steps=50,
+    max_steps=0,
 )
 
 MANAGER_PROMPT = f"""You are the managing director of a Merger and Acquisitions consultancy firm, responsible for overseeing the entire M&A process and coordinating a team of specialized professionals.
@@ -77,17 +77,11 @@ The process follows this sequential flow:
 3. 'critic' -> filtered companies list -> {CRITIC_COMPANIES_JSON_PATH}
 4. 'analyst' -> financial analysis -> {DATA_COLLECTION_PATH}
 5. 'valuator' -> final valuation -> {VALUATION_REPORT_PATH}
+6. End the chat
 
 Ensure each step is completed successfully before proceeding to the next stage. If any step fails or produces incomplete results, assess the situation and either request clarification or proceed with available data while noting the limitations.
 
-Throughout the process:
-- Monitor progress and ensure smooth handoffs between team members
-- Maintain alignment with client objectives
-- Ensure all deliverables meet quality standards
-- Step in if any clarification or course correction is needed
-- Verify all required files are properly saved and accessible
-
-Once the 'valuator' completes their report (outputs/valuation.md), confirm the process is complete and end the M&A advisory process without starting a new cycle or looping back to earlier stages.
+Once {VALUATION_REPORT_PATH} has been saved, end the chat
 """
 
-response = manager.run(MANAGER_PROMPT)
+response = manager.provide_final_answer(MANAGER_PROMPT)

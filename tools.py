@@ -202,45 +202,45 @@ def perform_valuation_analysis(
         except Exception:
             gorden_dict = [{"Error": "Gorden growth model calculation failed"}]
 
-        try:
-            lbo_metrics = fin_models.calculate_lbo_metrics(symbol)
-            lbo_dict = (
-                lbo_metrics
-                if lbo_metrics
-                else {"Error": "LBO metrics calculation failed"}
-            )
-        except Exception:
-            lbo_dict = {"Error": "LBO metrics calculation failed"}
+        # try:
+        #     lbo_metrics = fin_models.calculate_lbo_metrics(symbol)
+        #     lbo_dict = (
+        #         lbo_metrics
+        #         if lbo_metrics
+        #         else {"Error": "LBO metrics calculation failed"}
+        #     )
+        # except Exception:
+        #     lbo_dict = {"Error": "LBO metrics calculation failed"}
 
-        try:
-            ipo_valuation = fin_models.calculate_ipo_valuation(symbol)
-            ipo_dict = (
-                ipo_valuation
-                if ipo_valuation
-                else {"Error": "IPO valuation calculation failed"}
-            )
-        except Exception:
-            ipo_dict = {"Error": "IPO valuation calculation failed"}
+        # try:
+        #     ipo_valuation = fin_models.calculate_ipo_valuation(symbol)
+        #     ipo_dict = (
+        #         ipo_valuation
+        #         if ipo_valuation
+        #         else {"Error": "IPO valuation calculation failed"}
+        #     )
+        # except Exception:
+        #     ipo_dict = {"Error": "IPO valuation calculation failed"}
 
-        try:
-            lbo_sensitivity = fin_models.perform_lbo_sensitivity_analysis(symbol)
-            lbo_sensitivity_dict = (
-                lbo_sensitivity
-                if lbo_sensitivity
-                else {"Error": "LBO sensitivity analysis failed"}
-            )
-        except Exception:
-            lbo_sensitivity_dict = {"Error": "LBO sensitivity analysis failed"}
+        # try:
+        #     lbo_sensitivity = fin_models.perform_lbo_sensitivity_analysis(symbol)
+        #     lbo_sensitivity_dict = (
+        #         lbo_sensitivity
+        #         if lbo_sensitivity
+        #         else {"Error": "LBO sensitivity analysis failed"}
+        #     )
+        # except Exception:
+        #     lbo_sensitivity_dict = {"Error": "LBO sensitivity analysis failed"}
 
-        try:
-            ipo_sensitivity = fin_models.perform_ipo_sensitivity_analysis(symbol)
-            ipo_sensitivity_dict = (
-                ipo_sensitivity
-                if ipo_sensitivity
-                else {"Error": "IPO sensitivity analysis failed"}
-            )
-        except Exception:
-            ipo_sensitivity_dict = {"Error": "IPO sensitivity analysis failed"}
+        # try:
+        #     ipo_sensitivity = fin_models.perform_ipo_sensitivity_analysis(symbol)
+        #     ipo_sensitivity_dict = (
+        #         ipo_sensitivity
+        #         if ipo_sensitivity
+        #         else {"Error": "IPO sensitivity analysis failed"}
+        #     )
+        # except Exception:
+        #     ipo_sensitivity_dict = {"Error": "IPO sensitivity analysis failed"}
 
         output_path = Path("outputs/fmp_data") / f"{symbol}_valuation.md"
         report = f"""# Valuation Analysis for {symbol}
@@ -280,19 +280,18 @@ def perform_valuation_analysis(
 
 ## Gorden Growth Model
 {gorden.to_markdown() if not isinstance(gorden_dict[0].get("Error"), str) else "Error calculating Gorden Growth Model"}
-
-## LBO Analysis
-{format_lbo_metrics(lbo_dict) if not isinstance(lbo_dict.get("Error"), str) else "Error calculating LBO Metrics"}
-
-## IPO Valuation
-{format_ipo_valuation(ipo_dict) if not isinstance(ipo_dict.get("Error"), str) else "Error calculating IPO Valuation"}
-
-## LBO Sensitivity Analysis
-{format_lbo_sensitivity(lbo_sensitivity_dict) if not isinstance(lbo_sensitivity_dict.get("Error"), str) else "Error calculating LBO Sensitivity Analysis"}
-
-## IPO Sensitivity Analysis
-{format_ipo_sensitivity(ipo_sensitivity_dict) if not isinstance(ipo_sensitivity_dict.get("Error"), str) else "Error calculating IPO Sensitivity Analysis"}
 """
+        # ## LBO Analysis
+        # {format_lbo_metrics(lbo_dict) if not isinstance(lbo_dict.get("Error"), str) else "Error calculating LBO Metrics"}
+
+        # ## IPO Valuation
+        # {format_ipo_valuation(ipo_dict) if not isinstance(ipo_dict.get("Error"), str) else "Error calculating IPO Valuation"}
+
+        # ## LBO Sensitivity Analysis
+        # {format_lbo_sensitivity(lbo_sensitivity_dict) if not isinstance(lbo_sensitivity_dict.get("Error"), str) else "Error calculating LBO Sensitivity Analysis"}
+
+        # ## IPO Sensitivity Analysis
+        # {format_ipo_sensitivity(ipo_sensitivity_dict) if not isinstance(ipo_sensitivity_dict.get("Error"), str) else "Error calculating IPO Sensitivity Analysis"}
 
         with open(output_path, "w") as f:
             f.write(report)
