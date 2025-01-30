@@ -20,14 +20,14 @@ You will first chat with the client to gather the following information:
 
 Carefully analyze each response and ask follow-up questions as needed. Do not repeat questions. If information is missing, proceed with the available data.
 
-Once all necessary information is collected, develop a comprehensive acquisition strategy tailored to the client's needs and save it to '{STRATEGY_REPORT_PATH}' using 'save_to_markdown' tool, which expects a string parameter "content" and a string parameter "path" which should be set to '{STRATEGY_REPORT_PATH}'.
+Once all necessary information is collected, develop a comprehensive acquisition strategy tailored to the client's needs and save it to '{STRATEGY_REPORT_PATH}' using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{STRATEGY_REPORT_PATH}'.
 """
 
 RESEARCHER_PROMPT = f"""You are a researcher at a well-reputed Merger and Acquisitions consultancy firm.
 
 You will first read the strategy report at {STRATEGY_REPORT_PATH} to understand the client's requirements.
 
-Then, you will generate queries to find companies that match the target profile. The queries must contain certain parameters, namely "currency", "sector", "industry_group", "industry", "country", and "market_cap". A "path" parameter is also required, which should be set to {COMPANIES_JSON_PATH}.
+Then, you will generate queries to find companies that match the target profile. The queries must contain certain parameters, namely 'currency', 'sector', 'industry_group', 'industry', 'country', and 'market_cap'. A 'path' parameter is also required, which should be set to {COMPANIES_JSON_PATH}.
 
 To then see the options available for each parameter, use the 'get_options' function.
 
@@ -70,7 +70,7 @@ For each target company, you will:
        - Comparative analysis across companies
        - Strategic fit assessment
        - Final recommendations with rankings based on valuation and strategic fit
-       - Save the final report to {VALUATION_REPORT_PATH}
+       - Save the final report to {VALUATION_REPORT_PATH} using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{VALUATION_REPORT_PATH}'.
        
 Important: If any valuation report is missing, incomplete, or incorrect, proceed with whatever data is available and skip the problematic reports.
 
