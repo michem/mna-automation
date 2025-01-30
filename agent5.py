@@ -10,7 +10,7 @@ from typing_extensions import Annotated
 
 from config import OAI_CONFIG
 from prompts import VALUATION_PROMPT
-from tools import read_from_markdown, read_json_from_disk, save_to_markdown
+from tools import read_from_json, read_from_markdown, save_to_markdown
 
 LLM_CONFIG = OAI_CONFIG
 
@@ -39,10 +39,10 @@ register_function(
 )
 
 register_function(
-    read_json_from_disk,
+    read_from_json,
     caller=analyzer,
     executor=executor,
-    name="read_json_from_disk",
+    name="read_from_json",
     description="Read JSON data from disk",
 )
 

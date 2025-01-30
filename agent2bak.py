@@ -7,7 +7,7 @@ from tools import (
     get_names_and_summaries,
     get_options,
     read_from_markdown,
-    save_response_json,
+    save_to_json,
 )
 
 LLM_CONFIG = OAI_CONFIG
@@ -87,10 +87,10 @@ register_function(
 )
 
 register_function(
-    save_response_json,
+    save_to_json,
     caller=critic,
     executor=executor,
-    name="save_response_json",
+    name="save_to_json",
     description="Save the given JSON string to a file.",
 )
 

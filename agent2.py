@@ -1,17 +1,9 @@
-import os
-
 from dotenv import load_dotenv
-from smolagents import LiteLLMModel, ToolCallingAgent
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent
 
-from config import COMPANIES_JSON_PATH, MODEL_API_KEY, MODEL_ID, STRATEGY_REPORT_PATH
+from config import MODEL_API_KEY, MODEL_ID
 from prompts import RESEARCHER_PROMPT
-from tools import (
-    get_companies,
-    get_names_and_summaries,
-    get_options,
-    read_from_markdown,
-    save_response_json,
-)
+from tools import 
 
 load_dotenv()
 
@@ -19,25 +11,21 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.0,
 )
-research_agent = ToolCallingAgent(
-    tools=[
-        read_from_markdown,
-        get_options,
-        get_companies,
-        get_names_and_summaries,
-        save_response_json,
-    ],
+researcher = CodeAgent(
+    tools=[],
     model=model,
-    system_prompt=RESEARCHER_PROMPT,
-    max_steps=20,
+    additional_authorized_imports=["json", "os"],
+    max_steps=15,
+)
+managed_researcher = ManagedAgent(
+    agent=researcher,
+    name="researcher",
+    description=RESEARCHER_PROMPT,
 )
 
-conversation_active = True
-output_file = COMPANIES_JSON_PATH
-first_message = True
-
-research_response = research_agent.run(
-    "Please start the research process based on the strategy report.", reset=False
+response = researcher.run(
+    RESEARCHER_PROMPT,
+    reset=False,
 )

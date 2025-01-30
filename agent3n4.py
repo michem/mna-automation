@@ -10,8 +10,8 @@ from tools import (
     collect_financial_metrics,
     get_company_profile,
     perform_valuation_analysis,
+    read_from_json,
     read_from_markdown,
-    read_json_from_disk,
 )
 
 LLM_CONFIG = OAI_CONFIG
@@ -57,10 +57,10 @@ register_function(
 )
 
 register_function(
-    read_json_from_disk,
+    read_from_json,
     caller=analyst,
     executor=executor,
-    name="read_json_from_disk",
+    name="read_from_json",
     description="Read JSON data from disk",
 )
 
