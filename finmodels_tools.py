@@ -11,6 +11,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class FinModelError(Exception):
+    """Custom exception for financial modeling errors."""
+
+    pass
+
+
 class FinModelsTools:
     """Financial modeling tools for LBO and IPO analysis."""
 
@@ -37,8 +43,7 @@ class FinModelsTools:
         """Calculate LBO analysis metrics."""
         data = self.fmp.get_complete_lbo_data(symbol)
         if not data:
-            logger.error(f"Failed to get LBO data for {symbol}")
-            return {}
+            raise FinModelError(f"Failed to get LBO data for {symbol}")
 
         try:
             ev = data["capital_structure"]["enterprise_value"]
@@ -64,28 +69,14 @@ class FinModelsTools:
 
             cash_flows = [-equity] + projected_fcf + [exit_equity]
 
-            print(f"Cash Flow Stream for IRR: {cash_flows}")
-            print(f"Total Investment: {equity}")
-            print(f"Projected FCF: {projected_fcf}")
-            print(f"Exit Equity: {exit_equity}")
-
             try:
                 irr = npf.irr(cash_flows)
                 if np.isnan(irr):
                     irr = "Unable to calculate (nan)"
-                    print(
-                        "Warning: IRR calculation resulted in 'nan'. This may be due to invalid cash flows."
-                    )
-                    print("Cash flow signs:", [np.sign(cf) for cf in cash_flows])
-                    print(
-                        "Are all cash flows negative?",
-                        all(cf <= 0 for cf in cash_flows),
-                    )
                 else:
                     irr = float(irr)
             except Exception as e:
                 irr = f"Error: {str(e)}"
-                print(f"Error in IRR calculation: {str(e)}")
 
             moic = exit_equity / equity if equity != 0 else "N/A (division by zero)"
 
@@ -104,8 +95,7 @@ class FinModelsTools:
                 "returns": {"irr": irr, "moic": moic, "exit_equity": exit_equity},
             }
         except Exception as e:
-            logger.error(f"Error in LBO calculation: {str(e)}")
-            return {}
+            raise FinModelError(f"Error calculating LBO metrics: {str(e)}")
 
     def calculate_ipo_valuation(
         self, symbol: str, target_float: float = 0.20, price_range_buffer: float = 0.15
@@ -120,59 +110,46 @@ class FinModelsTools:
         Returns:
             Dict[str, Any]: IPO valuation results
         """
-        # Get company data
+
         data = self.fmp.get_complete_ipo_data(symbol)
         if not data:
-            logger.error(f"Failed to get IPO data for {symbol}")
-            return {}
+            raise FinModelError(f"Failed to get IPO data for {symbol}")
 
         try:
             metrics = data["metrics"]
             peer_data = data["peer_analysis"]
 
-            # Get latest metrics
             revenue = metrics["valuation_metrics"]["ev_to_sales"][0] or 0
             ebitda = metrics["valuation_metrics"]["ev_to_ebitda"][0] or 0
             pe_ratio = metrics["valuation_metrics"]["pe_ratio"][0]
 
-            # Get growth metrics
             revenue_growth = metrics["growth_metrics"]["revenue_growth"][0]
             ebit_growth = metrics["growth_metrics"]["ebit_growth"][0]
 
-            # Calculate peer multiples
             peer_companies = peer_data["peer_companies"]
             sector_pe = peer_data["sector_multiples"].get(
                 metrics["company_profile"]["sector"]
             )
             if sector_pe is None or sector_pe == 0:
-                sector_pe = (
-                    pe_ratio if pe_ratio and pe_ratio != 0 else 15
-                )  # Default to 15 if no valid PE ratio
+                sector_pe = pe_ratio if pe_ratio and pe_ratio != 0 else 15
 
-            # Calculate enterprise value using multiple methods
             ev_revenue = (revenue * sector_pe) if revenue and sector_pe else 0
-            ev_ebitda = (ebitda * 10) if ebitda else 0  # Standard EBITDA multiple
-
-            print(
-                f"Debug - sector_pe: {sector_pe}, ev_revenue: {ev_revenue}, ev_ebitda: {ev_ebitda}"
-            )
+            ev_ebitda = (ebitda * 10) if ebitda else 0
 
             if ev_revenue and ev_ebitda:
-                # Take weighted average based on growth
-                if revenue_growth > 0.3:  # High growth company
+
+                if revenue_growth > 0.3:
                     enterprise_value = (ev_revenue * 0.7) + (ev_ebitda * 0.3)
-                else:  # Mature company
+                else:
                     enterprise_value = (ev_revenue * 0.3) + (ev_ebitda * 0.7)
             elif ev_revenue:
                 enterprise_value = ev_revenue
             else:
                 enterprise_value = ev_ebitda
 
-            # Calculate equity value
             debt = metrics["valuation_metrics"]["debt_to_equity"][0]
             equity_value = enterprise_value - debt
 
-            # Calculate share price range
             shares_outstanding = equity_value / metrics["company_profile"]["market_cap"]
             float_shares = shares_outstanding * target_float
 
@@ -180,7 +157,6 @@ class FinModelsTools:
             price_low = base_price * (1 - price_range_buffer)
             price_high = base_price * (1 + price_range_buffer)
 
-            # Calculate multiples, handling potential division by zero
             ev_revenue_multiple = (
                 ev_revenue / revenue if revenue and revenue != 0 else "N/A"
             )
@@ -210,8 +186,7 @@ class FinModelsTools:
                 },
             }
         except Exception as e:
-            logger.error(f"Error in IPO valuation: {str(e)}")
-            return {}
+            raise FinModelError(f"Error in IPO valuation: {str(e)}")
 
     def perform_lbo_sensitivity_analysis(
         self,
@@ -241,21 +216,16 @@ class FinModelsTools:
         Returns:
             Dict[str, Any]: Sensitivity analysis results
         """
-        # Get company data
+
         data = self.fmp.get_complete_lbo_data(symbol)
         if not data:
-            logger.error(f"Failed to get LBO data for {symbol}")
-            return {}
+            raise FinModelError(f"Failed to get LBO data for {symbol}")
 
         try:
-            # Extract key metrics
             ev = data["capital_structure"]["enterprise_value"]
-            ebitda = data["financials"]["income_statement"]["ebitda"][
-                0
-            ]  # Most recent year
+            ebitda = data["financials"]["income_statement"]["ebitda"][0]
             fcf = data["financials"]["cash_flow"]["free_cash_flow"][0]
 
-            # Initialize results dictionary
             results = {
                 "fcf_growth_rate": [],
                 "exit_multiple": [],
@@ -264,32 +234,26 @@ class FinModelsTools:
                 "moic": [],
             }
 
-            # Perform sensitivity analysis
             for growth_rate in fcf_growth_rates:
                 for multiple in exit_multiples:
                     for rate in interest_rates:
-                        # Calculate purchase price components
+
                         debt = ev * debt_ratio
                         equity = ev - debt
 
-                        # Project cash flows
                         projected_fcf = []
                         remaining_debt = debt
                         for year in range(holding_period):
-                            # Apply specified FCF growth rate
+
                             fcf_growth = fcf * (1 + growth_rate) ** year
 
-                            # Cap debt repayment at specified percentage of FCF
                             debt_repayment = min(
                                 fcf_growth * debt_repayment_pct, remaining_debt
                             )
                             remaining_debt -= debt_repayment
 
-                            # Calculate interest expense
                             interest_expense = remaining_debt * rate
 
-                            # Calculate free cash after debt service
-                            # Allow for negative values up to available cash balance
                             free_cash_after_debt = (
                                 fcf_growth - interest_expense - debt_repayment
                             )
@@ -302,24 +266,19 @@ class FinModelsTools:
 
                             projected_fcf.append(free_cash_after_debt)
 
-                        # Calculate exit value using specified multiple and growth rate
                         exit_ebitda = (
                             ebitda * (1 + exit_ebitda_growth) ** holding_period
                         )
                         exit_value = exit_ebitda * multiple
 
-                        # Calculate returns
                         total_investment = equity
                         exit_equity = exit_value - remaining_debt
 
-                        # Calculate IRR
                         cash_flows = [-total_investment] + projected_fcf + [exit_equity]
                         irr = npf.irr(cash_flows)
 
-                        # Calculate MOIC (Multiple of Invested Capital)
                         moic = exit_equity / total_investment
 
-                        # Store results
                         results["fcf_growth_rate"].append(growth_rate)
                         results["exit_multiple"].append(multiple)
                         results["interest_rate"].append(rate)
@@ -328,8 +287,7 @@ class FinModelsTools:
 
             return results
         except Exception as e:
-            logger.error(f"Error in LBO sensitivity analysis: {str(e)}")
-            return {}
+            raise FinModelError(f"Error in LBO sensitivity analysis: {str(e)}")
 
     def perform_ipo_sensitivity_analysis(
         self,
@@ -347,49 +305,43 @@ class FinModelsTools:
         Returns:
             Dict[str, Any]: Sensitivity analysis results
         """
-        # Get company data
+
         data = self.fmp.get_complete_ipo_data(symbol)
         if not data:
-            logger.error(f"Failed to get IPO data for {symbol}")
-            return {}
+            raise FinModelError(f"Failed to get IPO data for {symbol}")
 
         try:
             metrics = data["metrics"]
             peer_data = data["peer_analysis"]
 
-            # Get latest metrics
             revenue = metrics["valuation_metrics"]["ev_to_sales"][0] or 0
             ebitda = metrics["valuation_metrics"]["ev_to_ebitda"][0] or 0
             pe_ratio = metrics["valuation_metrics"]["pe_ratio"][0]
 
-            # Get growth metrics
             revenue_growth = metrics["growth_metrics"]["revenue_growth"][0]
             ebit_growth = metrics["growth_metrics"]["ebit_growth"][0]
 
-            # Calculate peer multiples
             peer_companies = peer_data["peer_companies"]
             sector_pe = peer_data["sector_multiples"].get(
                 metrics["company_profile"]["sector"]
             )
             if sector_pe is None:
-                sector_pe = pe_ratio if pe_ratio else 15  # Default to 15 if no PE ratio
+                sector_pe = pe_ratio if pe_ratio else 15
 
-            # Calculate enterprise value using multiple methods
             ev_revenue = (revenue * sector_pe) if revenue else 0
-            ev_ebitda = (ebitda * 10) if ebitda else 0  # Standard EBITDA multiple
+            ev_ebitda = (ebitda * 10) if ebitda else 0
 
             if ev_revenue and ev_ebitda:
-                # Take weighted average based on growth
-                if revenue_growth > 0.3:  # High growth company
+
+                if revenue_growth > 0.3:
                     enterprise_value = (ev_revenue * 0.7) + (ev_ebitda * 0.3)
-                else:  # Mature company
+                else:
                     enterprise_value = (ev_revenue * 0.3) + (ev_ebitda * 0.7)
             elif ev_revenue:
                 enterprise_value = ev_revenue
             else:
                 enterprise_value = ev_ebitda
 
-            # Initialize results dictionary
             results = {
                 "target_float": [],
                 "price_range_buffer": [],
@@ -400,14 +352,12 @@ class FinModelsTools:
                 "float_shares": [],
             }
 
-            # Perform sensitivity analysis
             for target_float in target_floats:
                 for buffer in price_range_buffers:
-                    # Calculate equity value
+
                     debt = metrics["valuation_metrics"]["debt_to_equity"][0]
                     equity_value = enterprise_value - debt
 
-                    # Calculate share price range
                     shares_outstanding = (
                         equity_value / metrics["company_profile"]["market_cap"]
                     )
@@ -417,7 +367,6 @@ class FinModelsTools:
                     price_low = base_price * (1 - buffer)
                     price_high = base_price * (1 + buffer)
 
-                    # Store results
                     results["target_float"].append(target_float)
                     results["price_range_buffer"].append(buffer)
                     results["equity_value"].append(equity_value)
@@ -428,5 +377,4 @@ class FinModelsTools:
 
             return results
         except Exception as e:
-            logger.error(f"Error in IPO sensitivity analysis: {str(e)}")
-            return {}
+            raise FinModelError(f"Error in IPO sensitivity analysis: {str(e)}")
