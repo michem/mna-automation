@@ -361,8 +361,7 @@ def format_lbo_sensitivity(sensitivity: Dict) -> str:
     unique_growth_rates = sorted(set(sensitivity["fcf_growth_rate"]))
     unique_exit_multiples = sorted(set(sensitivity["exit_multiple"]))
 
-    table = "### LBO Sensitivity Analysis\n\n"
-    table += "Selected scenarios showing IRR variation by FCF Growth Rate and Exit Multiple (at 8% interest rate):\n\n"
+    table += "\n\nSelected scenarios showing IRR variation by FCF Growth Rate and Exit Multiple (at 8% interest rate):\n\n"
     table += "| FCF Growth | Exit Multiple | IRR | MOIC |\n"
     table += "|------------|---------------|-----|------|\n"
 
@@ -393,8 +392,7 @@ def format_lbo_sensitivity(sensitivity: Dict) -> str:
 
 def format_ipo_sensitivity(sensitivity: Dict) -> str:
     """Format IPO sensitivity analysis for markdown report."""
-    table = "### IPO Sensitivity Analysis\n\n"
-    table += "Price Range and Float Analysis:\n\n"
+    table += "\n\nPrice Range and Float Analysis:\n\n"
     table += "| Target Float | Price Buffer | Price Range | Float Shares |\n"
     table += "|--------------|--------------|-------------|-------------|\n"
 
