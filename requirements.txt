@@ -15,3 +15,5 @@ financetoolkit
 financetoolkit[yfinance]
 smolagents[litellm]
 google-generativeai
+numpy_financial
+fmpsdk
