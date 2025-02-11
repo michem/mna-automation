@@ -1,0 +1,37 @@
+{
+    "timestamp": "20250211_142417",
+    "conversation_history": [
+        {
+            "role": "user",
+            "text": "Current stage: target\nUser message: I want to buy a company in the AI for education market"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"target\",\n    \"extracted_info\": \"AI for education market\",\n    \"next_message\": \"What are your primary goals for this M&A?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: goals\nUser message: market expansion"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"goals\",\n    \"extracted_info\": \"market expansion\",\n    \"next_message\": \"What's the budget range for this acquisition?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: budget\nUser message: 500m  usd and the timelline is 4 years"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"budget\",\n    \"extracted_info\": \"500 million USD\",\n    \"next_message\": \"What's the expected timeline for completing this acquisition?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: timeline\nUser message: 4 years"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"timeline\",\n    \"extracted_info\": \"4 years\",\n    \"next_message\": \"Thank you for sharing the details. Do you have any other specifications or considerations you'd like to discuss?\"\n}"
+        }
+    ]
+}

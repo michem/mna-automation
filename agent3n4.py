@@ -36,7 +36,7 @@ managed_analyst = ManagedAgent(
     description=ANALYST_PROMPT,
 )
 
-response = analyst.run(
-    ANALYST_PROMPT,
-    reset=False,
-)
+# response = analyst.run(
+#     ANALYST_PROMPT,
+#     reset=False,
+# )

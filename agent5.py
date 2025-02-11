@@ -24,7 +24,7 @@ managed_valuator = ManagedAgent(
     description=VALUATION_PROMPT,
 )
 
-response = valuator.run(
-    VALUATION_PROMPT,
-    reset=False,
-)
+# response = valuator.run(
+#     VALUATION_PROMPT,
+#     reset=False,
+# )

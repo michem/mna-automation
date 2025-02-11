@@ -1,0 +1,44 @@
+{
+    "timestamp": "20250211_143425",
+    "conversation_history": [
+        {
+            "role": "user",
+            "text": "Current stage: target\nCurrent state: {\"target_market\": null, \"specific_company\": null, \"goals\": null, \"budget\": null, \"timeline\": null}\nUser message: AI for education "
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"goals\",\n    \"collected_info\": {\n        \"target_market\": \"AI for education\",\n        \"specific_company\": null,\n        \"goals\": null,\n        \"budget\": null,\n        \"timeline\": null\n    },\n    \"next_message\": \"What are your primary goals for this M&A in the AI for education sector?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: goals\nCurrent state: {\"target_market\": \"AI for education\", \"specific_company\": null, \"goals\": null, \"budget\": null, \"timeline\": null}\nUser message: market expansion"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"budget\",\n    \"collected_info\": {\n        \"target_market\": \"AI for education\",\n        \"specific_company\": null,\n        \"goals\": \"market expansion\",\n        \"budget\": null,\n        \"timeline\": null\n    },\n    \"next_message\": \"What is your budget range for this acquisition?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: budget\nCurrent state: {\"target_market\": \"AI for education\", \"specific_company\": null, \"goals\": \"market expansion\", \"budget\": null, \"timeline\": null}\nUser message: budget is 400 m usd and timeline is 4 years"
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"timeline\",\n    \"collected_info\": {\n        \"target_market\": \"AI for education\",\n        \"specific_company\": null,\n        \"goals\": \"market expansion\",\n        \"budget\": \"400M USD\",\n        \"timeline\": null\n    },\n    \"next_message\": \"Could you please confirm the timeline for completing this acquisition? You mentioned 4 years; is that correct?\"\n}"
+        },
+        {
+            "role": "user",
+            "text": "Current stage: timeline\nCurrent state: {\"target_market\": \"AI for education\", \"specific_company\": null, \"goals\": \"market expansion\", \"budget\": \"400M USD\", \"timeline\": null}\nUser message: yes "
+        },
+        {
+            "role": "bot",
+            "text": "{\n    \"answer_complete\": true,\n    \"current_stage\": \"timeline\",\n    \"collected_info\": {\n        \"target_market\": \"AI for education\",\n        \"specific_company\": null,\n        \"goals\": \"market expansion\",\n        \"budget\": \"400M USD\",\n        \"timeline\": \"4 years\"\n    },\n    \"next_message\": \"Thank you. All necessary information for the M&A strategy in the AI for education sector has been collected. What would be the next step you'd like to proceed with?\"\n}"
+        }
+    ],
+    "collected_info": {
+        "target_market": "AI for education",
+        "specific_company": null,
+        "goals": "market expansion",
+        "budget": "400M USD",
+        "timeline": "4 years"
+    }
+}
