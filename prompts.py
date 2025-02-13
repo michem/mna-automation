@@ -14,7 +14,7 @@ Your task is to analyze the collected client information and prepare a detailed 
 Steps:
 1. Read the strategy information from './outputs/strategy_info.json' using the provided read_from_json tool.
 2. Analyze the collected information which includes:
-   - Target market or specific company details
+   - Target industry or specific company details
    - Client's goals
    - Budget constraints
    - Timeline requirements

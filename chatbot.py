@@ -33,11 +33,11 @@ class MAStrategyBot:
         self.conversation_history = []
         self.thread_id = None
         self.assistant_id = None
-        self.current_stage = "target"
+        self.current_stage = "industry"
 
         # Initialize the state dictionary to store collected information
         self.collected_info = {
-            "target_market": None,
+            "industry": None,
             "specific_company": None,
             "goals": None,
             "budget": None,
@@ -47,13 +47,13 @@ class MAStrategyBot:
         # Define the system instructions
         self.system_instructions = """You are an M&A strategy consultant chatbot. Your role is to gather specific information in a sequential order and maintain a state of collected information.
 
-1. First, determine if they have a specific target company or target market
+1. First, determine if they have a specific target company or industry
 2. Then, understand their goals for the M&A
 3. Next, get their budget information
 4. Finally, get their timeline
 
 Current question stages:
-- target: Ask if they have a specific company in mind or if they're targeting a market/sector
+- industry: Ask if they have a specific company in mind or if they're targeting a market/sector
 - goals: Ask about their primary goals for this M&A
 - budget: Ask about their budget range
 - timeline: Ask about their expected timeline
@@ -70,9 +70,9 @@ For each response:
 Response format:
 {
     "answer_complete": true/false,
-    "current_stage": "target/goals/budget/timeline",
+    "current_stage": "industry/goals/budget/timeline",
     "collected_info": {
-        "target_market": "extracted market info or null",
+        "industry": "extracted market info or null",
         "specific_company": "extracted company info or null",
         "goals": "extracted goals or null",
         "budget": "extracted budget or null",
@@ -138,7 +138,7 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
 
                 # Update the current stage if the answer was complete
                 if response_data["answer_complete"]:
-                    if self.current_stage == "target":
+                    if self.current_stage == "industry":
                         self.current_stage = "goals"
                     elif self.current_stage == "goals":
                         self.current_stage = "budget"
