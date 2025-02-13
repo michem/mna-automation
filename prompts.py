@@ -26,6 +26,7 @@ Based on this information, develop a comprehensive acquisition strategy that add
 4. Implementation Timeline
 5. Key Recommendations
 
+DO NOT WRITE ANY INFORMATION IN THE REPORT OUTSIDE WHAT THE CLIENT PROVIDED.
 Format your strategy report professionally and save it to '{STRATEGY_REPORT_PATH}' using 'save_to_markdown' tool, which expects:
 - parameter 'content': Your strategy report text
 - parameter 'path': '{STRATEGY_REPORT_PATH}'

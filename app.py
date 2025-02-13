@@ -1,40 +1,25 @@
-import streamlit as st
-from smolagents import CodeAgent, LiteLLMModel, ToolCallingAgent
+import os
+import shutil
+import subprocess
 
-from agent1 import managed_strategist
-from agent2 import managed_critic, managed_researcher
-from agent3n4 import managed_analyst
-from agent5 import managed_valuator
-from config import MODEL_API_KEY, MODEL_ID
-from prompts import RESEARCHER_PROMPTlke
-from run import MANAGER_PROMPT, manager
-from tools import (
-    get_companies,
-    get_options,
-    read_from_json,
-    read_from_markdown,
-    save_to_json,
-)
+# Define paths
+outputs_dir = 'outputs'
+fmp_data_dir = os.path.join(outputs_dir, 'fmp_data')
 
-model = LiteLLMModel(
-    model_id=MODEL_ID,
-    api_key=MODEL_API_KEY,
-    temperature=0.0,
-)
+# Delete all files in the 'outputs/' directory if it exists
+if os.path.exists(outputs_dir):
+    for filename in os.listdir(outputs_dir):
+        file_path = os.path.join(outputs_dir, filename)
+        try:
+            if os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # Remove directories
+            else:
+                os.remove(file_path)  # Remove files
+        except Exception as e:
+            print(f"Error deleting {file_path}: {e}")
 
-agent = ToolCallingAgent(
-    tools=[],
-    model=model,
-    managed_agents=[managed_strategist],
-)
+# Create 'outputs/fmp_data/' directory if it doesn't exist
+os.makedirs(fmp_data_dir, exist_ok=True)
 
-st.title("CodeAgent Demo with Streamlit")
-
-if st.button("Run Agent"):
-    st.write("Running the agent...")
-    result = agent.run(MANAGER_PROMPT, stream=True)
-    for step in result:
-        st.write(step.action_output if step.action_output else "No output")
-        if step.observations:
-            st.write("Observations:")
-            st.write(step.observations)
+# Run the Streamlit chatbot.py app
+subprocess.run(['streamlit', 'run', 'chatbot.py'])

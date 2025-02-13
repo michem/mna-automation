@@ -229,24 +229,23 @@ def main():
 
                 # Clear the "Running analysis..." message
                 analysis_container.empty()
-
                 # Store results in session state
+                valuation_file = "outputs/valuation.md"
                 st.session_state.analysis_results = []
                 for step in result:
-                    if step.action_output:
+                    if hasattr(step, 'action_output') and step.action_output:
                         st.write("Action Output:")
                         st.write(step.action_output)
                         st.session_state.analysis_results.append(
                             ("output", step.action_output)
                         )
-                    if step.observations:
-                        st.write("Analysis Observations:")
-                        st.write(step.observations)
-                        st.session_state.analysis_results.append(
-                            ("observation", step.observations)
-                        )
+                    elif os.path.exists(valuation_file):
+                        # If action_output does not exist, send a success message
+                        st.write("Evaluation completed successfully!")
+                        break  # Exit the loop once the success message is shown
 
                 st.session_state.analysis_complete = True
+
             else:
                 # Display stored results
                 for result_type, content in st.session_state.analysis_results:
