@@ -13,9 +13,10 @@ model = LiteLLMModel(
     api_key=MODEL_API_KEY,
     temperature=0.2,
 )
-valuator = ToolCallingAgent(
+valuator = CodeAgent(
     tools=[read_from_markdown, read_from_json, save_to_markdown],
     model=model,
+    additional_authorized_imports=['os'],
     max_steps=20,
 )
 managed_valuator = ManagedAgent(

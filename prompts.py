@@ -74,7 +74,7 @@ VALUATION_PROMPT = f"""You are an expert analyst tasked with generating a compre
 You will read the strategy report at {STRATEGY_REPORT_PATH} to understand the acquisition criteria, and then read the filtered companies list at {CRITIC_COMPANIES_JSON_PATH}.
 
 For each target company, you will:
-   - Read their valuation file (*_valuation.md in {DATA_COLLECTION_PATH}, where * is the company symbol)
+   - Read their valuation markdown format files saved in the following format: (*_valuation.md in {DATA_COLLECTION_PATH}, where * is the company symbol)
    - Analyze data in context of strategy requirements
    - Generate a very comprehensive valuation report that includes:
        - Analysis of each company's financials and valuation

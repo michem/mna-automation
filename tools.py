@@ -91,7 +91,7 @@ def collect_financial_metrics(
 {metrics.to_markdown()}
 """
 
-        output_path = Path("outputs/fmp_data") / f"{symbol}_metrics.md"
+        output_path = Path("outputs/fmp_data/metrics") / f"{symbol}_metrics.md"
         with open(output_path, "w") as f:
             f.write(report)
 
@@ -237,7 +237,7 @@ def perform_valuation_analysis(
         except Exception:
             ipo_sensitivity_dict = {"Error": "IPO sensitivity analysis failed"}
 
-        output_path = Path("outputs/fmp_data") / f"{symbol}_valuation.md"
+        output_path = Path("outputs/fmp_data/valuation") / f"{symbol}_valuation.md"
         report = f"""# Valuation Analysis for {symbol}
 
 ## Enterprise Value Breakdown
