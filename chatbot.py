@@ -42,6 +42,10 @@ class MAStrategyBot:
             "goals": None,
             "budget": None,
             "timeline": None,
+            "financial_health": None,
+            "market_position": None,
+            "risks_concern": None,
+            "risks_details": None,
         }
 
         # Define the system instructions
@@ -51,12 +55,16 @@ class MAStrategyBot:
 2. Then, understand their goals for the M&A
 3. Next, get their budget information
 4. Finally, get their timeline
+5. Additionally, ask about the financial health, market position, and any concerns regarding risks of their target company.
 
 Current question stages:
 - industry: Ask if they have a specific company in mind or if they're targeting a market/sector
 - goals: Ask about their primary goals for this M&A
 - budget: Ask about their budget range
 - timeline: Ask about their expected timeline
+- financial_health: Ask about the financial health of the target company
+- market_position: Ask about the market position of the target company
+- risks: Ask if they have any concerns regarding risks involved in the acquisition or partnership
 
 For each response:
 - Extract the relevant information from the user's response
@@ -70,13 +78,17 @@ For each response:
 Response format:
 {
     "answer_complete": true/false,
-    "current_stage": "industry/goals/budget/timeline",
+    "current_stage": "industry/goals/budget/timeline/financial_health/market_position/risks",
     "collected_info": {
         "industry": "extracted market info or null",
         "specific_company": "extracted company info or null",
         "goals": "extracted goals or null",
         "budget": "extracted budget or null",
-        "timeline": "extracted timeline or null"
+        "timeline": "extracted timeline or null",
+        "financial_health": "extracted financial health or null",
+        "market_position": "extracted market position or null",
+        "risks_concern": "extracted risks concern or null",
+        "risks_details": "extracted risk details or null"
     },
     "next_message": "your next message to the user"
 }
@@ -145,6 +157,12 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
                     elif self.current_stage == "budget":
                         self.current_stage = "timeline"
                     elif self.current_stage == "timeline":
+                        self.current_stage = "financial_health"
+                    elif self.current_stage == "financial_health":
+                        self.current_stage = "market_position"
+                    elif self.current_stage == "market_position":
+                        self.current_stage = "risks"
+                    elif self.current_stage == "risks":
                         self.current_stage = "complete"
 
                 return response_data["next_message"]
@@ -227,12 +245,32 @@ def main():
                 # Run the multiagent analysis
                 result = agent.run(MANAGER_PROMPT, stream=True)
 
-                # Clear the "Running analysis..." message
                 analysis_container.empty()
-                # Store results in session state
+
+# Store results in session state
                 valuation_file = "outputs/valuation.md"
                 st.session_state.analysis_results = []
+                files_already_written = False  # Flag to track if we've written the files
+
                 for step in result:
+                    if not files_already_written and os.path.exists("outputs/critic_companies.json"):
+                        with open("outputs/critic_companies.json", 'r') as f:
+                            companies_data = json.load(f)
+                        
+                        # Create array of expected valuation files
+                        valuation_files = [f"outputs/fmp_data/valuation/{company['symbol']}_valuation.md" 
+                                        for company in companies_data]
+                        
+                        # Check if all valuation files exist
+                        if all(os.path.exists(file) for file in valuation_files):
+                            # Display existing valuation files
+                            for file in valuation_files:
+                                with open(file, 'r') as f:
+                                    st.write(f.read())
+                            files_already_written = True  # Set flag to prevent future writes
+                            continue  # Skip to next iteration
+                    
+                    # Original step processing
                     if hasattr(step, 'action_output') and step.action_output:
                         st.write("Action Output:")
                         st.write(step.action_output)
@@ -240,9 +278,8 @@ def main():
                             ("output", step.action_output)
                         )
                     elif os.path.exists(valuation_file):
-                        # If action_output does not exist, send a success message
                         st.write("Evaluation completed successfully!")
-                        break  # Exit the loop once the success message is shown
+                        break
 
                 st.session_state.analysis_complete = True
 
