@@ -18,10 +18,10 @@ from run import MANAGER_PROMPT, manager
 from tools import get_companies, get_options, read_from_markdown, save_to_json
 
 # Define paths for directories
-outputs_dir = 'outputs'
-fmp_data_dir = os.path.join(outputs_dir, 'fmp_data')
-valuation_dir = os.path.join(fmp_data_dir, 'valuation')
-metrics_dir = os.path.join(fmp_data_dir, 'metrics')
+outputs_dir = "outputs"
+fmp_data_dir = os.path.join(outputs_dir, "fmp_data")
+valuation_dir = os.path.join(fmp_data_dir, "valuation")
+metrics_dir = os.path.join(fmp_data_dir, "metrics")
 
 # Delete all files in the 'outputs/' directory if it exists
 if os.path.exists(outputs_dir):
@@ -125,7 +125,7 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
         self.assistant = self.client.beta.assistants.create(
             name="M&A Strategy Consultant",
             instructions=self.system_instructions,
-            model="gpt-4-turbo-preview",
+            model="gpt-4o-mini",
         )
         self.assistant_id = self.assistant.id
         thread = self.client.beta.threads.create()
@@ -249,6 +249,17 @@ def main():
         if not st.session_state.analysis_started:
             # Save strategy information
             filename = bot.save_strategy_info()
+
+            # print outputs directory structure to terminal
+            print("Outputs Directory Structure:")
+            for root, dirs, files in os.walk(outputs_dir):
+                level = root.replace(outputs_dir, "").count(os.sep)
+                indent = " " * 4 * (level)
+                print(f"{indent}{os.path.basename(root)}/")
+                subindent = " " * 4 * (level + 1)
+                for f in files:
+                    print(f"{subindent}{f}")
+
             st.success(f"Thank you! Strategy information has been saved to: {filename}")
 
             # Display the collected information
@@ -270,31 +281,39 @@ def main():
 
                 analysis_container.empty()
 
-# Store results in session state
+                # Store results in session state
                 valuation_file = "outputs/valuation.md"
                 st.session_state.analysis_results = []
-                files_already_written = False  # Flag to track if we've written the files
+                files_already_written = (
+                    False  # Flag to track if we've written the files
+                )
 
                 for step in result:
-                    if not files_already_written and os.path.exists("outputs/critic_companies.json"):
-                        with open("outputs/critic_companies.json", 'r') as f:
+                    if not files_already_written and os.path.exists(
+                        "outputs/critic_companies.json"
+                    ):
+                        with open("outputs/critic_companies.json", "r") as f:
                             companies_data = json.load(f)
-                        
+
                         # Create array of expected valuation files
-                        valuation_files = [f"outputs/fmp_data/valuation/{company['symbol']}_valuation.md" 
-                                        for company in companies_data]
-                        
+                        valuation_files = [
+                            f"outputs/fmp_data/valuation/{company['symbol']}_valuation.md"
+                            for company in companies_data
+                        ]
+
                         # Check if all valuation files exist
                         if all(os.path.exists(file) for file in valuation_files):
                             # Display existing valuation files
                             for file in valuation_files:
-                                with open(file, 'r') as f:
+                                with open(file, "r") as f:
                                     st.write(f.read())
-                            files_already_written = True  # Set flag to prevent future writes
+                            files_already_written = (
+                                True  # Set flag to prevent future writes
+                            )
                             continue  # Skip to next iteration
-                    
+
                     # Original step processing
-                    if hasattr(step, 'action_output') and step.action_output:
+                    if hasattr(step, "action_output") and step.action_output:
                         st.write("Action Output:")
                         st.write(step.action_output)
                         st.session_state.analysis_results.append(
