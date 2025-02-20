@@ -196,13 +196,34 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
             return "Hello! To begin our M&A strategy discussion, do you have a specific company in mind for acquisition, or are you targeting a particular market or sector?"
 
 
+def print_directory_structure(startpath, output_container=None):
+    """Print the directory structure starting from startpath"""
+    structure = []
+    for root, dirs, files in os.walk(startpath):
+        level = root.replace(startpath, "").count(os.sep)
+        indent = "│   " * level
+        structure.append(f"{indent}└── {os.path.basename(root)}/")
+        subindent = "│   " * (level + 1)
+        for f in files:
+            structure.append(f"{subindent}└── {f}")
+
+    structure_text = "\n".join(structure)
+    if output_container:
+        output_container.text(f"Directory Structure:\n{structure_text}")
+    return structure_text
+
+
 def main():
     st.title("M&A Strategy Assessment System")
     st.write("Let's discuss your merger and acquisition strategy.")
+    dir_container = st.empty()
+    print_directory_structure("outputs", dir_container)
 
     # Initialize session states
     if "bot" not in st.session_state:
         st.session_state.bot = MAStrategyBot()
+        # Print initial directory structure
+
     if "conversation_ended" not in st.session_state:
         st.session_state.conversation_ended = False
     if "analysis_started" not in st.session_state:
@@ -250,17 +271,11 @@ def main():
             # Save strategy information
             filename = bot.save_strategy_info()
 
-            # print outputs directory structure to terminal
-            print("Outputs Directory Structure:")
-            for root, dirs, files in os.walk(outputs_dir):
-                level = root.replace(outputs_dir, "").count(os.sep)
-                indent = " " * 4 * (level)
-                print(f"{indent}{os.path.basename(root)}/")
-                subindent = " " * 4 * (level + 1)
-                for f in files:
-                    print(f"{subindent}{f}")
-
             st.success(f"Thank you! Strategy information has been saved to: {filename}")
+
+            # Print updated directory structure
+            dir_container = st.empty()
+            print_directory_structure("outputs", dir_container)
 
             # Display the collected information
             st.json(bot.collected_info)
