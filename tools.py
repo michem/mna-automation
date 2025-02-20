@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from financetoolkit import Toolkit
-import streamlit as st
 from smolagents import tool
 from typing_extensions import Annotated
 
@@ -456,81 +455,69 @@ def save_to_markdown(
     content: Annotated[str, "Content to save"],
     file_path: Annotated[str, "Path to save"],
 ) -> str:
-    """Save the input content to streamlit's session state.
+    """Save the input content to a markdown file at the specified path.
 
     Args:
         content: The content to be saved. Must be a string.
-        file_path: Key to use in session state.
+        file_path: The path to the file where the content will be saved.
     """
-    # Use session state as persistent storage
-    if 'markdown_files' not in st.session_state:
-        st.session_state.markdown_files = {}
-    
-    st.session_state.markdown_files[file_path] = content
+    with open(file_path, "w") as file:
+        file.write(content)
+
     return f"Content saved to {file_path}"
+
 
 @tool
 def read_from_markdown(
     filepath: Annotated[str, "Path of Strategy Report"]
 ) -> Annotated[str, "Content of Strategy Report"]:
-    """Read the content from streamlit's session state.
+    """Read the content from a markdown file.
 
     Args:
-        filepath: Key in session state to read from.
+        filepath: Path to the markdown file.
 
     Returns:
-        str: Content stored in session state.
+        str: Content of the markdown file.
     """
-    if 'markdown_files' not in st.session_state:
-        raise FileNotFoundError("No markdown files have been saved yet")
-    
-    if filepath not in st.session_state.markdown_files:
-        raise FileNotFoundError(f"File {filepath} not found")
-    
-    return st.session_state.markdown_files[filepath]
+    with open(filepath, "r") as file:
+        content = file.read()
+    return content
+
 
 @tool
 def read_from_json(file_path: Annotated[str, "Path to JSON file"]) -> dict:
-    """Read the content from streamlit's session state.
+    """Read the content from a JSON file.
 
     Args:
-        file_path: Key in session state to read from.
+        file_path: Path to the JSON file to read.
 
     Returns:
-        dict: Content stored in session state.
+        dict: Content of the JSON file.
     """
-    if 'json_files' not in st.session_state:
-        raise FileNotFoundError("No JSON files have been saved yet")
-    
-    if file_path not in st.session_state.json_files:
-        raise FileNotFoundError(f"File {file_path} not found")
-    
-    data = st.session_state.json_files[file_path]
-    if isinstance(data, list):
-        return {"data": data}
-    return data
+    with open(file_path, "r") as file:
+        data = json.load(file)
+        if isinstance(data, list):
+            return {"data": data}
+        return data
+
 
 @tool
 def save_to_json(
     string: Annotated[str, "String to save as JSON"],
     path: Annotated[str, "Path to save JSON file to"],
 ) -> None:
-    """Save the given string as JSON in streamlit's session state.
+    """Save the given string as a JSON file. Conversion is automatically handled.
 
     Args:
         string: The string to save as JSON.
-        path: Key to use in session state.
+        path: The path to the file where the JSON string will be saved.
     """
-    # Initialize json_files in session state if it doesn't exist
-    if 'json_files' not in st.session_state:
-        st.session_state.json_files = {}
-    
-    # Parse string to ensure it's valid JSON
     data = json.loads(string)
-    
-    # Store in session state
-    st.session_state.json_files[path] = data
+    with open(path, "w") as file:
+        json.dump(data, file, indent=4)
+
     return f"Data saved to {path}"
+
 
 @tool
 def get_options(parameter: Annotated[str, "Parameter you want options for"]) -> dict:

@@ -1,4 +1,9 @@
 import json
+import os
+import shutil
+import time
+from datetime import datetime
+
 import streamlit as st
 from openai import OpenAI
 from smolagents import CodeAgent, LiteLLMModel, ToolCallingAgent
@@ -8,10 +13,31 @@ from agent2 import managed_critic, managed_researcher
 from agent3n4 import managed_analyst
 from agent5 import managed_valuator
 from config import MODEL_API_KEY, MODEL_ID
-import time
 from prompts import RESEARCHER_PROMPT
 from run import MANAGER_PROMPT, manager
 from tools import get_companies, get_options, read_from_markdown, save_to_json
+
+# Define paths for directories
+outputs_dir = "outputs"
+fmp_data_dir = os.path.join(outputs_dir, "fmp_data")
+valuation_dir = os.path.join(fmp_data_dir, "valuation")
+metrics_dir = os.path.join(fmp_data_dir, "metrics")
+
+# Delete all files in the 'outputs/' directory if it exists
+if os.path.exists(outputs_dir):
+    for filename in os.listdir(outputs_dir):
+        file_path = os.path.join(outputs_dir, filename)
+        try:
+            if os.path.isdir(file_path):
+                shutil.rmtree(file_path)  # Remove directories
+            else:
+                os.remove(file_path)  # Remove files
+        except Exception as e:
+            print(f"Error deleting {file_path}: {e}")
+
+# Create 'outputs/fmp_data/', 'outputs/fmp_data/valuation', and 'outputs/fmp_data/metrics' directories if they don't exist
+os.makedirs(valuation_dir, exist_ok=True)
+os.makedirs(metrics_dir, exist_ok=True)
 
 # Initialize the LiteLLM model
 model = LiteLLMModel(
@@ -23,9 +49,10 @@ model = LiteLLMModel(
 # Initialize the multiagent
 agent = manager
 
+
 class MAStrategyBot:
     def __init__(self):
-        self.client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.conversation_history = []
         self.thread_id = None
         self.assistant_id = None
@@ -45,14 +72,14 @@ class MAStrategyBot:
         }
 
         # Define the system instructions
-        self.system_instructions = """
-You are an M&A strategy consultant chatbot. Your role is to gather specific information in a sequential order and maintain a state of collected information.
+        self.system_instructions = """You are an M&A strategy consultant chatbot. Your role is to gather specific information in a sequential order and maintain a state of collected information.
 
-First, determine if they have a specific target company or industry
-Then, understand their goals for the M&A
-Next, get their budget information
-Finally, get their timeline
-Additionally, ask about the financial health, market position, and any concerns regarding risks of their target company.
+1. First, determine if they have a specific target company or industry
+2. Then, understand their goals for the M&A
+3. Next, get their budget information
+4. Finally, get their timeline
+5. Additionally, ask about the financial health, market position, and any concerns regarding risks of their target company.
+
 Current question stages:
 - industry: Ask if they have a specific company in mind or if they're targeting a market/sector
 - goals: Ask about their primary goals for this M&A
@@ -89,11 +116,10 @@ Response format:
     "next_message": "your next message to the user"
 }
 
-Always respond in this JSON format. Be decisive and direct - if you can extract meaningful information from a response, accept it and move forward rather than asking for clarification or confirmation.        
-"""
+Always respond in this JSON format. Be decisive and direct - if you can extract meaningful information from a response, accept it and move forward rather than asking for clarification or confirmation."""
 
         self._initialize_assistant()
-        self._initialize_session_storage()
+        os.makedirs("outputs", exist_ok=True)
 
     def _initialize_assistant(self):
         self.assistant = self.client.beta.assistants.create(
@@ -105,41 +131,11 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
         thread = self.client.beta.threads.create()
         self.thread_id = thread.id
 
-    def _initialize_session_storage(self):
-        """Initialize storage in Streamlit session state"""
-        if 'storage' not in st.session_state:
-            st.session_state.storage = {
-                'fmp_data': {
-                    'valuation': {},
-                    'metrics': {}
-                },
-                'outputs': {}
-            }
-
     def save_strategy_info(self):
-        """Save the collected information to session state"""
-        st.session_state.storage['outputs']['strategy_info'] = self.collected_info
-        return "strategy_info"
-
-    def save_to_storage(self, data, path):
-        """Save data to nested dictionary in session state"""
-        parts = path.split('/')
-        current = st.session_state.storage
-        for part in parts[:-1]:
-            if part not in current:
-                current[part] = {}
-            current = current[part]
-        current[parts[-1]] = data
-
-    def read_from_storage(self, path):
-        """Read data from nested dictionary in session state"""
-        parts = path.split('/')
-        current = st.session_state.storage
-        for part in parts:
-            if part not in current:
-                raise FileNotFoundError(f"Path {path} not found in storage")
-            current = current[part]
-        return current
+        # Save the collected information as JSON
+        with open("outputs/strategy_info.json", "w") as f:
+            json.dump(self.collected_info, f, indent=4)
+        return "outputs/strategy_info.json"
 
     def get_bot_response(self, user_message=None):
         if user_message:
@@ -177,45 +173,56 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
 
                 # Update the current stage if the answer was complete
                 if response_data["answer_complete"]:
-                    self.current_stage = self._get_next_stage(self.current_stage)
+                    if self.current_stage == "industry":
+                        self.current_stage = "goals"
+                    elif self.current_stage == "goals":
+                        self.current_stage = "budget"
+                    elif self.current_stage == "budget":
+                        self.current_stage = "timeline"
+                    elif self.current_stage == "timeline":
+                        self.current_stage = "financial_health"
+                    elif self.current_stage == "financial_health":
+                        self.current_stage = "market_position"
+                    elif self.current_stage == "market_position":
+                        self.current_stage = "risks"
+                    elif self.current_stage == "risks":
+                        self.current_stage = "complete"
 
                 return response_data["next_message"]
             except json.JSONDecodeError:
                 return "I apologize, but I encountered an error. Could you please repeat your last message?"
         else:
+            # Initial message
             return "Hello! To begin our M&A strategy discussion, do you have a specific company in mind for acquisition, or are you targeting a particular market or sector?"
 
-    def _get_next_stage(self, current_stage):
-        stages = {
-            "industry": "goals",
-            "goals": "budget",
-            "budget": "timeline",
-            "timeline": "financial_health",
-            "financial_health": "market_position",
-            "market_position": "risks",
-            "risks": "complete"
-        }
-        return stages.get(current_stage, current_stage)
 
-def display_storage_structure(storage, indent=0):
-    """Display the session state storage structure"""
+def print_directory_structure(startpath, output_container=None):
+    """Print the directory structure starting from startpath"""
     structure = []
-    for key, value in storage.items():
-        prefix = "│   " * indent + "└── "
-        if isinstance(value, dict):
-            structure.append(f"{prefix}{key}/")
-            structure.extend(display_storage_structure(value, indent + 1))
-        else:
-            structure.append(f"{prefix}{key}")
-    return structure
+    for root, dirs, files in os.walk(startpath):
+        level = root.replace(startpath, "").count(os.sep)
+        indent = "│   " * level
+        structure.append(f"{indent}└── {os.path.basename(root)}/")
+        subindent = "│   " * (level + 1)
+        for f in files:
+            structure.append(f"{subindent}└── {f}")
+
+    structure_text = "\n".join(structure)
+    if output_container:
+        output_container.text(f"Directory Structure:\n{structure_text}")
+    return structure_text
+
 
 def main():
     st.title("M&A Strategy Assessment System")
     st.write("Let's discuss your merger and acquisition strategy.")
+    # dir_container = st.empty()
+    # print_directory_structure("outputs", dir_container)
 
     # Initialize session states
     if "bot" not in st.session_state:
         st.session_state.bot = MAStrategyBot()
+        # Print initial directory structure
 
     if "conversation_ended" not in st.session_state:
         st.session_state.conversation_ended = False
@@ -231,20 +238,29 @@ def main():
         else:
             st.write(f"👤 You: {message['text']}")
 
+    # If conversation hasn't ended, show input field
     if not st.session_state.conversation_ended:
+        # Get initial message if conversation is just starting
         if not bot.conversation_history:
             initial_message = bot.get_bot_response()
             bot.conversation_history.append({"role": "bot", "text": initial_message})
             st.rerun()
 
+        # Get user input
         user_input = st.text_input("Your response:", key="user_input")
 
         if st.button("Submit"):
             if user_input:
+                # Add user message to history
                 bot.conversation_history.append({"role": "user", "text": user_input})
+
+                # Get bot response
                 bot_response = bot.get_bot_response(user_input)
+
+                # Add bot response to history
                 bot.conversation_history.append({"role": "bot", "text": bot_response})
 
+                # Check if we've completed all stages
                 if bot.current_stage == "complete":
                     st.session_state.conversation_ended = True
 
@@ -253,41 +269,74 @@ def main():
     else:
         if not st.session_state.analysis_started:
             # Save strategy information
-            storage_path = bot.save_strategy_info()
-            st.success(f"Thank you! Strategy information has been saved to storage")
+            filename = bot.save_strategy_info()
 
-            # Display the storage structure
-            structure = display_storage_structure(st.session_state.storage)
-            st.text("\n".join(structure))
+            st.success(f"Thank you! Strategy information has been saved to: {filename}")
+
+            # Print updated directory structure
+            # dir_container = st.empty()
+            # print_directory_structure("outputs", dir_container)
 
             # Display the collected information
             st.json(bot.collected_info)
 
+            # Add a button to start the analysis
             if st.button("Generate Strategy Analysis"):
                 st.session_state.analysis_started = True
                 st.rerun()
 
         else:
             if not st.session_state.get("analysis_complete", False):
+                # Create a container for the analysis output
                 analysis_container = st.empty()
                 analysis_container.write("Running strategy analysis...")
 
+                # Run the multiagent analysis
                 result = agent.run(MANAGER_PROMPT, stream=True)
+
                 analysis_container.empty()
 
+                # Store results in session state
+                valuation_file = "outputs/valuation.md"
                 st.session_state.analysis_results = []
+                files_already_written = (
+                    False  # Flag to track if we've written the files
+                )
 
                 for step in result:
+                    if not files_already_written and os.path.exists(
+                        "outputs/critic_companies.json"
+                    ):
+                        with open("outputs/critic_companies.json", "r") as f:
+                            companies_data = json.load(f)
+
+                        # Create array of expected valuation files
+                        valuation_files = [
+                            f"outputs/fmp_data/valuation/{company['symbol']}_valuation.md"
+                            for company in companies_data
+                        ]
+
+                        # Check if all valuation files exist
+                        if all(os.path.exists(file) for file in valuation_files):
+                            # Display existing valuation files
+                            for file in valuation_files:
+                                with open(file, "r") as f:
+                                    st.write(f.read())
+                            files_already_written = (
+                                True  # Set flag to prevent future writes
+                            )
+                            continue  # Skip to next iteration
+
+                    # Original step processing
                     if hasattr(step, "action_output") and step.action_output:
                         st.write("Action Output:")
                         st.write(step.action_output)
                         st.session_state.analysis_results.append(
                             ("output", step.action_output)
                         )
-
-                        # Store analysis results in session state
-                        if isinstance(step.action_output, dict):
-                            bot.save_to_storage(step.action_output, f"outputs/analysis_{len(st.session_state.analysis_results)}")
+                    elif os.path.exists(valuation_file):
+                        st.write("Evaluation completed successfully!")
+                        break
 
                 st.session_state.analysis_complete = True
 
@@ -296,6 +345,7 @@ def main():
                 for result_type, content in st.session_state.analysis_results:
                     st.write(f"{result_type.title()}:")
                     st.write(content)
+
 
 if __name__ == "__main__":
     main()
