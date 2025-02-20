@@ -216,8 +216,8 @@ def print_directory_structure(startpath, output_container=None):
 def main():
     st.title("M&A Strategy Assessment System")
     st.write("Let's discuss your merger and acquisition strategy.")
-    dir_container = st.empty()
-    print_directory_structure("outputs", dir_container)
+    # dir_container = st.empty()
+    # print_directory_structure("outputs", dir_container)
 
     # Initialize session states
     if "bot" not in st.session_state:
@@ -274,8 +274,8 @@ def main():
             st.success(f"Thank you! Strategy information has been saved to: {filename}")
 
             # Print updated directory structure
-            dir_container = st.empty()
-            print_directory_structure("outputs", dir_container)
+            # dir_container = st.empty()
+            # print_directory_structure("outputs", dir_container)
 
             # Display the collected information
             st.json(bot.collected_info)
