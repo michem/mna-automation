@@ -11,7 +11,7 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.6,
+    temperature=0.0,
 )
 strategist = CodeAgent(
     tools=[save_to_markdown, read_from_json],
