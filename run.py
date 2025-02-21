@@ -6,6 +6,7 @@ from agent2 import managed_critic, managed_researcher
 from agent3n4 import managed_analyst
 from agent5 import managed_valuator
 from config import MODEL_API_KEY, MODEL_ID, VALUATION_REPORT_PATH
+from tools import *
 
 load_dotenv()
 
@@ -18,9 +19,9 @@ model = LiteLLMModel(
     temperature=0.0,
 )
 manager = CodeAgent(
-    tools=[],
+    tools=[read_from_json, save_to_json],
+    additional_authorized_imports=["json", "os"],
     model=model,
-    additional_authorized_imports=["os", "json"],
     managed_agents=[
         managed_strategist,
         managed_researcher,
