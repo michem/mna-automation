@@ -125,7 +125,7 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
         self.assistant = self.client.beta.assistants.create(
             name="M&A Strategy Consultant",
             instructions=self.system_instructions,
-            model="gpt-4o-mini",
+            model="gpt-4-turbo-preview",
             temperature=0.0,
         )
         self.assistant_id = self.assistant.id
