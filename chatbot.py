@@ -126,6 +126,7 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
             name="M&A Strategy Consultant",
             instructions=self.system_instructions,
             model="gpt-4o-mini",
+            temperature=0.0,
         )
         self.assistant_id = self.assistant.id
         thread = self.client.beta.threads.create()
