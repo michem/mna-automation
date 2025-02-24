@@ -33,7 +33,7 @@ Stop the chat/process once {VALUATION_REPORT_PATH } is generated.
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.0,
 )
 manager = CodeAgent(
     tools=[],

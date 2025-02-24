@@ -1,11 +1,33 @@
 import json
 import os
+import sys
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import List, Optional
 
 import google.generativeai as genai
 import streamlit as st
+
+
+class StreamlitOutputRedirector:
+    def __init__(self, placeholder):
+        self.buffer = ""
+        self.placeholder = placeholder
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+
+    def write(self, text):
+        self.buffer += text
+        self.placeholder.code(self.buffer)
+        self._original_stdout.write(text)
+
+    def flush(self):
+        pass
+
+    def reset(self):
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
+
 
 BASE_DIR = "outputs"
 FMP_DATA_DIR = os.path.join(BASE_DIR, "fmp_data")
@@ -200,39 +222,83 @@ Remember to respond only with a JSON object in the specified format, including t
 
 def run_analysis(analysis_container) -> None:
     try:
-        from agent1 import managed_strategist
-        from agent2 import managed_critic, managed_researcher
-        from agent3n4 import managed_analyst
-        from agent5 import managed_valuator
         from run import MANAGER_PROMPT, manager
 
-        result = manager.run(MANAGER_PROMPT, stream=True)
+        progress_message = analysis_container.empty()
+        progress_message.info("Starting analysis process...")
 
-        for step in result:
-            if hasattr(step, "action_output") and step.action_output:
-                st.write(step.action_output)
+        console_container = analysis_container.container()
+        strategy_container = analysis_container.container()
+        critic_container = analysis_container.container()
+        valuation_container = analysis_container.container()
 
-            if os.path.exists("outputs/critic_companies.json"):
-                with open("outputs/critic_companies.json", "r") as f:
-                    companies = json.load(f)
+        # with console_container.expander("Console Output", expanded=True):
+        #     console_placeholder = st.empty()
+        # output_redirector = StreamlitOutputRedirector(console_placeholder)
+        # sys.stdout = output_redirector
+        # sys.stderr = output_redirector
 
-                valuation_files = [
-                    f"{VALUATION_DIR}/{company['symbol']}_valuation.md"
-                    for company in companies
-                ]
+        files_displayed = set()
 
-                if all(os.path.exists(file) for file in valuation_files):
-                    for file in valuation_files:
-                        with open(file, "r") as f:
-                            analysis_container.write(f.read())
-                    break
+        try:
+            result = manager.run(MANAGER_PROMPT, stream=True)
+
+            for step in result:
+                if hasattr(step, "action_output") and step.action_output:
+                    print(f"Processing: {step.action_output}\n")
+                    progress_message.info(f"Processing: {step.action_output}")
+
+                if "strategy_info" not in files_displayed and os.path.exists(
+                    "outputs/strategy_info.json"
+                ):
+                    print("Processing strategy information...\n")
+                    with strategy_container.expander(
+                        "Strategy Information", expanded=False
+                    ):
+                        with open("outputs/strategy_info.json", "r") as f:
+                            strategy_data = json.load(f)
+                            st.code(
+                                json.dumps(strategy_data, indent=2), language="json"
+                            )
+                    progress_message.info("Strategy information processed")
+                    files_displayed.add("strategy_info")
+
+                if "critic_companies" not in files_displayed and os.path.exists(
+                    "outputs/critic_companies.json"
+                ):
+                    print("Processing critic's analysis...\n")
+                    with critic_container.expander(
+                        "Researched Companies", expanded=False
+                    ):
+                        with open("outputs/critic_companies.json", "r") as f:
+                            critic_data = json.load(f)
+                            st.code(json.dumps(critic_data, indent=2), language="json")
+                    progress_message.info("Critic's analysis completed")
+                    files_displayed.add("critic_companies")
+
+            if os.path.exists("outputs/valuation.md"):
+                print("Generating valuation report...\n")
+                with valuation_container.expander("Valuation Report", expanded=False):
+                    with open("outputs/valuation.md", "r") as f:
+                        st.code(f.read())
+                progress_message.info("Valuation report generated")
+                files_displayed.add("valuation_report")
+
+            if len(files_displayed) == 3:
+                print("Analysis process completed successfully!\n")
+                progress_message.empty()
+
+        finally:
+            output_redirector.reset()
 
     except Exception as e:
-        st.error(f"Analysis failed: {str(e)}")
+        error_msg = f"Analysis failed: {str(e)}"
+        st.error(error_msg)
+        print(f"Error: {error_msg}\n")
 
 
 def initialize_gemini():
-    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
@@ -248,9 +314,7 @@ def initialize_gemini():
 
 
 def main():
-    st.set_page_config(
-        page_title="M&A Strategy Assessment", page_icon="💼", layout="wide"
-    )
+    st.set_page_config(page_title="M&A Automation", page_icon="💼", layout="centered")
 
     st.title("M&A Strategy Assessment System")
     st.write("Let's discuss your merger and acquisition strategy.")
