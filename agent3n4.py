@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
+from smolagents import LiteLLMModel, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import ANALYST_PROMPT
@@ -17,7 +17,7 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.0,
+    temperature=0.2,
 )
 analyst = ToolCallingAgent(
     tools=[
@@ -29,9 +29,6 @@ analyst = ToolCallingAgent(
     ],
     model=model,
     max_steps=20,
-)
-managed_analyst = ManagedAgent(
-    agent=analyst,
     name="analyst",
     description=ANALYST_PROMPT,
 )

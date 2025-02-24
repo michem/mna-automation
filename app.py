@@ -237,8 +237,8 @@ def run_analysis(analysis_container) -> None:
 
         for step in result:
             if hasattr(step, "action_output") and step.action_output:
-                print(f"Processing: {step.action_output}\n")
-                progress_message.info(f"Processing: {step.action_output}")
+                print(f"{step.action_output}\n")
+                progress_message.code(step.action_output)
 
             if "strategy_info" not in files_displayed and os.path.exists(
                 "outputs/strategy_info.json"
@@ -300,11 +300,20 @@ def initialize_gemini():
 
 def main():
     st.set_page_config(page_title="M&A Automation", page_icon="💼", layout="centered")
+    st.markdown(
+        """
+        <style>
+        .css-18e3th9 .block-container {
+            padding-top: 0rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    col1, col2, col3 = st.columns([1, 3, 1])
+    col1, col2, col3 = st.columns([0.25, 0.5, 0.25])
     with col2:
-        st.title("M&A Automation")
-    st.write("Let's discuss your merger and acquisition strategy.")
+        st.image("resources/mna.png", use_container_width=True)
 
     if "bot" not in st.session_state:
         model = initialize_gemini()
@@ -318,8 +327,12 @@ def main():
 
     bot = st.session_state.bot
 
+    # Render conversation as chat bubbles
     for message in bot.conversation_history:
-        st.write(f"{'🤖 Bot:' if message.role == 'bot' else '👤 You:'} {message.text}")
+        if message.role == "bot":
+            st.chat_message("assistant").write(message.text)
+        else:
+            st.chat_message("user").write(message.text)
 
     if not st.session_state.conversation_ended:
         if not bot.conversation_history:
@@ -327,33 +340,25 @@ def main():
             bot.conversation_history.append(Message(role="bot", text=initial_message))
             st.rerun()
 
-        user_input = st.text_input("Your response:", key="user_input")
+        user_input = st.chat_input("Type your message here...")
+        if user_input:
+            bot.conversation_history.append(Message(role="user", text=user_input))
+            bot_response, is_complete = bot.get_response(user_input)
+            bot.conversation_history.append(Message(role="bot", text=bot_response))
 
-        if st.button("Submit", key="submit_button"):
-            if user_input.strip():
-                bot.conversation_history.append(Message(role="user", text=user_input))
-                bot_response, is_complete = bot.get_response(user_input)
-                bot.conversation_history.append(Message(role="bot", text=bot_response))
-
-                if is_complete or bot.current_stage in [
-                    Stage.COMPLETION,
-                    Stage.COMPLETE,
-                ]:
-                    st.session_state.conversation_ended = True
-                    filename = bot.save_strategy_info()
-                    st.success(f"Strategy information has been saved to: {filename}")
-                    st.json(vars(bot.collected_info))
-                    if st.button("Generate strategy analysis"):
-                        st.session_state.analysis_started = True
-                        st.rerun()
-
-                st.rerun()
-
+            if is_complete or bot.current_stage in [Stage.COMPLETION, Stage.COMPLETE]:
+                st.session_state.conversation_ended = True
+                filename = bot.save_strategy_info()
+                st.success(f"Strategy information has been saved to: {filename}")
+                st.json(vars(bot.collected_info))
+                if st.button("Generate strategy analysis"):
+                    st.session_state.analysis_started = True
+                    st.rerun()
+            st.rerun()
     elif not st.session_state.analysis_started:
         if st.button("Generate strategy analysis"):
             st.session_state.analysis_started = True
             st.rerun()
-
     else:
         analysis_container = st.container()
         with analysis_container:
