@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import STRATEGY_PROMPT
@@ -18,6 +18,9 @@ strategist = CodeAgent(
     additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=10,
+)
+managed_strategist = ManagedAgent(
+    agent=strategist,
     name="strategist",
     description=STRATEGY_PROMPT,
 )

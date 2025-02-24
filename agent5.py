@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import VALUATION_PROMPT
@@ -18,6 +18,9 @@ valuator = CodeAgent(
     model=model,
     additional_authorized_imports=["os"],
     max_steps=20,
+)
+managed_valuator = ManagedAgent(
+    agent=valuator,
     name="valuator",
     description=VALUATION_PROMPT,
 )
