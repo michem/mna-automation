@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel, ManagedAgent
+from smolagents import CodeAgent, LiteLLMModel
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import STRATEGY_PROMPT
@@ -11,20 +11,18 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.6,
+    temperature=0.2,
 )
 strategist = CodeAgent(
+    name="strategist",
     tools=[save_to_markdown, human_intervention],
     model=model,
     max_steps=10,
-)
-managed_strategist = ManagedAgent(
-    agent=strategist,
-    name="strategist",
-    description=STRATEGY_PROMPT,
+    description="A strategist agent that generates a comprehensive M&A strategy report based on the provided prompt.",
 )
 
-response = strategist.run(
-    STRATEGY_PROMPT,
-    reset=False,
-)
+if __name__ == "__main__":
+    response = strategist.run(
+        STRATEGY_PROMPT,
+        reset=False,
+    )
