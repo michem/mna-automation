@@ -232,64 +232,49 @@ def run_analysis(analysis_container) -> None:
         critic_container = analysis_container.container()
         valuation_container = analysis_container.container()
 
-        # with console_container.expander("Console Output", expanded=True):
-        #     console_placeholder = st.empty()
-        # output_redirector = StreamlitOutputRedirector(console_placeholder)
-        # sys.stdout = output_redirector
-        # sys.stderr = output_redirector
-
         files_displayed = set()
+        result = manager.run(MANAGER_PROMPT, stream=True)
 
-        try:
-            result = manager.run(MANAGER_PROMPT, stream=True)
+        for step in result:
+            if hasattr(step, "action_output") and step.action_output:
+                print(f"Processing: {step.action_output}\n")
+                progress_message.info(f"Processing: {step.action_output}")
 
-            for step in result:
-                if hasattr(step, "action_output") and step.action_output:
-                    print(f"Processing: {step.action_output}\n")
-                    progress_message.info(f"Processing: {step.action_output}")
-
-                if "strategy_info" not in files_displayed and os.path.exists(
-                    "outputs/strategy_info.json"
+            if "strategy_info" not in files_displayed and os.path.exists(
+                "outputs/strategy_info.json"
+            ):
+                print("Processing strategy information...\n")
+                with strategy_container.expander(
+                    "Strategy Information", expanded=False
                 ):
-                    print("Processing strategy information...\n")
-                    with strategy_container.expander(
-                        "Strategy Information", expanded=False
-                    ):
-                        with open("outputs/strategy_info.json", "r") as f:
-                            strategy_data = json.load(f)
-                            st.code(
-                                json.dumps(strategy_data, indent=2), language="json"
-                            )
-                    progress_message.info("Strategy information processed")
-                    files_displayed.add("strategy_info")
+                    with open("outputs/strategy_info.json", "r") as f:
+                        strategy_data = json.load(f)
+                        st.code(json.dumps(strategy_data, indent=2), language="json")
+                progress_message.info("Strategy information processed")
+                files_displayed.add("strategy_info")
 
-                if "critic_companies" not in files_displayed and os.path.exists(
-                    "outputs/critic_companies.json"
-                ):
-                    print("Processing critic's analysis...\n")
-                    with critic_container.expander(
-                        "Researched Companies", expanded=False
-                    ):
-                        with open("outputs/critic_companies.json", "r") as f:
-                            critic_data = json.load(f)
-                            st.code(json.dumps(critic_data, indent=2), language="json")
-                    progress_message.info("Critic's analysis completed")
-                    files_displayed.add("critic_companies")
+            if "critic_companies" not in files_displayed and os.path.exists(
+                "outputs/critic_companies.json"
+            ):
+                print("Processing critic's analysis...\n")
+                with critic_container.expander("Researched Companies", expanded=False):
+                    with open("outputs/critic_companies.json", "r") as f:
+                        critic_data = json.load(f)
+                        st.code(json.dumps(critic_data, indent=2), language="json")
+                progress_message.info("Critic's analysis completed")
+                files_displayed.add("critic_companies")
 
-            if os.path.exists("outputs/valuation.md"):
-                print("Generating valuation report...\n")
-                with valuation_container.expander("Valuation Report", expanded=False):
-                    with open("outputs/valuation.md", "r") as f:
-                        st.code(f.read())
-                progress_message.info("Valuation report generated")
-                files_displayed.add("valuation_report")
+        if os.path.exists("outputs/valuation.md"):
+            print("Generating valuation report...\n")
+            with valuation_container.expander("Valuation Report", expanded=False):
+                with open("outputs/valuation.md", "r") as f:
+                    st.code(f.read())
+            progress_message.info("Valuation report generated")
+            files_displayed.add("valuation_report")
 
-            if len(files_displayed) == 3:
-                print("Analysis process completed successfully!\n")
-                progress_message.empty()
-
-        finally:
-            output_redirector.reset()
+        if len(files_displayed) == 3:
+            print("Analysis process completed successfully!\n")
+            progress_message.empty()
 
     except Exception as e:
         error_msg = f"Analysis failed: {str(e)}"
