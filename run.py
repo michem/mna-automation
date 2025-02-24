@@ -5,7 +5,7 @@ from agent1 import managed_strategist
 from agent2 import managed_critic, managed_researcher
 from agent3n4 import managed_analyst
 from agent5 import managed_valuator
-from config import MODEL_API_KEY, MODEL_ID
+from config import MODEL_API_KEY, MODEL_ID, VALUATION_REPORT_PATH
 from prompts import (
     ANALYST_PROMPT,
     CRITIC_PROMPT,
@@ -26,6 +26,8 @@ Pass on verbatim the following prompts to the respective agents:
 5. VALUATOR: ```{VALUATION_PROMPT}```
 
 Your task is to ensure that the agents work together effectively, leveraging their expertise to achieve the best possible outcome for the M&A process. You will need to manage the workflow, facilitate communication between agents, and ensure that all aspects of the M&A process are covered.
+
+Stop the chat/process once {VALUATION_REPORT_PATH } is generated.
 """
 
 model = LiteLLMModel(
