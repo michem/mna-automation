@@ -230,7 +230,7 @@ def run_analysis(analysis_container) -> None:
         from run import MANAGER_PROMPT, manager
 
         progress_message = analysis_container.empty()
-        progress_message.info("Starting analysis process...")
+        progress_message.info("Running process...")
 
         console_container = analysis_container.container()
 
