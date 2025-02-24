@@ -16,7 +16,7 @@ model = LiteLLMModel(
 valuator = CodeAgent(
     tools=[read_from_markdown, read_from_json, save_to_markdown],
     model=model,
-    additional_authorized_imports=['os'],
+    additional_authorized_imports=["os"],
     max_steps=20,
 )
 managed_valuator = ManagedAgent(
@@ -24,8 +24,3 @@ managed_valuator = ManagedAgent(
     name="valuator",
     description=VALUATION_PROMPT,
 )
-
-# response = valuator.run(
-#     VALUATION_PROMPT,
-#     reset=False,
-# )

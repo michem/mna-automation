@@ -41,12 +41,3 @@ managed_critic = ManagedAgent(
     name="critic",
     description=CRITIC_PROMPT,
 )
-
-# res_response = researcher.run(
-#     RESEARCHER_PROMPT,
-#     reset=False,
-# )
-# crt_response = critic.run(
-#     CRITIC_PROMPT,
-#     reset=False,
-# )

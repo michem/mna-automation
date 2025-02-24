@@ -23,8 +23,3 @@ managed_strategist = ManagedAgent(
     name="strategist",
     description=STRATEGY_PROMPT,
 )
-
-# response = strategist.run(
-# STRATEGY_PROMPT,
-# reset=False,
-# )
