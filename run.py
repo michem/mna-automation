@@ -38,6 +38,7 @@ model = LiteLLMModel(
 manager = CodeAgent(
     tools=[],
     model=model,
+    additional_authorized_imports=["json", "os"],
     managed_agents=[
         managed_strategist,
         managed_researcher,
