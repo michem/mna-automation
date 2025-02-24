@@ -30,7 +30,7 @@ RESEARCHER_PROMPT = f"""You are a researcher at a well-reputed Merger and Acquis
 
 You will first read the strategy report at {STRATEGY_REPORT_PATH} to understand the client's requirements.
 
-Then, you will generate queries to find companies that match the target profile by using the 'get_companies' tool with the following parameters:
+Then, you will generate queries to find companies that match the target profile of the strategy report by using the 'get_companies' tool with the following parameters:
 - 'currency': Select from available currency options (e.g., 'USD', 'EUR', 'GBP')
 - 'sector': Select from sectors like 'Information Technology', 'Health Care', 'Financials', etc.
 - 'industry_group': Select from options like 'Software & Services', 'Banks', etc.
