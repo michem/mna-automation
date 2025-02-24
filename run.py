@@ -31,7 +31,7 @@ Your task is to ensure that the agents work together effectively, leveraging the
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.0,
+    temperature=0.2,
 )
 manager = CodeAgent(
     tools=[],

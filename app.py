@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -33,6 +34,10 @@ BASE_DIR = "outputs"
 FMP_DATA_DIR = os.path.join(BASE_DIR, "fmp_data")
 VALUATION_DIR = os.path.join(FMP_DATA_DIR, "valuation")
 METRICS_DIR = os.path.join(FMP_DATA_DIR, "metrics")
+
+for directory in [METRICS_DIR, VALUATION_DIR, FMP_DATA_DIR, BASE_DIR]:
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
 
 for directory in [BASE_DIR, FMP_DATA_DIR, VALUATION_DIR, METRICS_DIR]:
     os.makedirs(directory, exist_ok=True)
@@ -231,9 +236,9 @@ def run_analysis(analysis_container) -> None:
 
         files_to_check = {
             "strategy_info": "outputs/strategy_info.json",
+            "strategy_report": "outputs/output.md",
             "companies": "outputs/companies.json",
             "valuation_report": "outputs/valuation.md",
-            "strategy_report": "outputs/output.md",
         }
 
         files_displayed = set()
@@ -292,6 +297,12 @@ def display_file(container, file_key, file_path):
                 strategy_data = json.load(f)
                 st.code(json.dumps(strategy_data, indent=2), language="json")
 
+    elif file_key == "strategy_report":
+        print("Generating strategy report...\n")
+        with container.expander("Strategy Report", expanded=False):
+            with open(file_path, "r") as f:
+                st.markdown(f.read())
+
     elif file_key == "companies":
         print("Processing researched companies...\n")
         with container.expander("Researched Companies", expanded=False):
@@ -304,12 +315,6 @@ def display_file(container, file_key, file_path):
         with container.expander("Valuation Report", expanded=False):
             with open(file_path, "r") as f:
                 st.code(f.read())
-
-    elif file_key == "strategy_report":
-        print("Generating strategy report...\n")
-        with container.expander("Strategy Report", expanded=False):
-            with open(file_path, "r") as f:
-                st.markdown(f.read())
 
 
 def initialize_gemini():
