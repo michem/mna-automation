@@ -18,7 +18,7 @@ valuator = ToolCallingAgent(
     tools=[read_from_markdown, read_from_json, save_to_markdown],
     model=model,
     max_steps=20,
-    description="A financial analyst agent that generates a comprehensive M&A strategy report based on the provided prompt.",
+    description="A valuator agent that analyzes financial and valuation data and generates a comprehensive valuation report based on client requirements in the strategy report.",
 )
 
 if __name__ == "__main__":

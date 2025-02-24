@@ -2,17 +2,11 @@ from dotenv import load_dotenv
 from smolagents import CodeAgent, LiteLLMModel
 
 from agent1 import strategist
-from agent2 import critic, researcher
+from agent2 import researcher
 from agent3n4 import analyst
 from agent5 import valuator
 from config import MODEL_API_KEY, MODEL_ID
-from prompts import (
-    ANALYST_PROMPT,
-    CRITIC_PROMPT,
-    RESEARCHER_PROMPT,
-    STRATEGY_PROMPT,
-    VALUATION_PROMPT,
-)
+from prompts import ANALYST_PROMPT, RESEARCHER_PROMPT, STRATEGY_PROMPT, VALUATION_PROMPT
 
 load_dotenv()
 
@@ -21,11 +15,14 @@ MANAGER_PROMPT = f"""You are the managing director of a Merger and Acquisitions 
 Pass on verbatim the following prompts to the respective agents:
 1. STRATEGIST: ```{STRATEGY_PROMPT}```
 2. RESEARCHER: ```{RESEARCHER_PROMPT}```
-3. CRITIC: ```{CRITIC_PROMPT}```
-4. ANALYST: ```{ANALYST_PROMPT}```
-5. VALUATOR: ```{VALUATION_PROMPT}```
+3. ANALYST: ```{ANALYST_PROMPT}```
+4. VALUATOR: ```{VALUATION_PROMPT}```
+
+Call each agent in the order listed above.
 
 Your task is to ensure that the agents work together effectively, leveraging their expertise to achieve the best possible outcome for the M&A process. You will need to manage the workflow, facilitate communication between agents, and ensure that all aspects of the M&A process are covered.
+
+Exit once each of the agent has completed their task and provided their final output.
 """
 
 model = LiteLLMModel(
@@ -40,7 +37,6 @@ manager = CodeAgent(
     managed_agents=[
         strategist,
         researcher,
-        critic,
         analyst,
         valuator,
     ],

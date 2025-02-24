@@ -30,7 +30,7 @@ analyst = ToolCallingAgent(
     ],
     model=model,
     max_steps=20,
-    description="A financial analyst agent that generates a comprehensive M&A strategy report based on the provided prompt.",
+    description="A financial analyst agent that assesses company symbols and calls various tools to collect financial and valuation data.",
 )
 
 if __name__ == "__main__":

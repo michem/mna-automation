@@ -33,14 +33,14 @@ researcher = CodeAgent(
     additional_authorized_imports=["json", "os"],
     model=model_r,
     max_steps=15,
-    description="A researcher agent that generates a comprehensive M&A strategy report based on the provided prompt.",
+    description="A researcher agent that finds companies that match the target profile of the strategy report by calling the 'get_options' tool for valid arguments to pass to 'get_companies' tool, folowed by 'save_to_json' tool to save the results to a JSON file.",
 )
 critic = ToolCallingAgent(
     name="critic",
     tools=[get_names_and_summaries, read_from_json, save_to_json, read_from_markdown],
     model=model_c,
     max_steps=10,
-    description="A critic agent that generates a comprehensive M&A strategy report based on the provided prompt.",
+    description="A critic agent that analyzes the JSON file containing companies and filters them based on the strategy report requirements, saving the results to a new JSON file in a similar format as the input file.",
 )
 
 if __name__ == "__main__":

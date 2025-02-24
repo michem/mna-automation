@@ -11,7 +11,7 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.6,
 )
 strategist = CodeAgent(
     name="strategist",
@@ -19,7 +19,7 @@ strategist = CodeAgent(
     additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=10,
-    description="A strategist agent that generates a comprehensive M&A strategy report based on the provided prompt.",
+    description="A strategist agent that generates a comprehensive M&A strategy report based on the client's requirements and market analysis.,",
 )
 
 if __name__ == "__main__":

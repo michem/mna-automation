@@ -557,23 +557,23 @@ def convert_ndarray_to_list(data):
 @tool
 def get_companies(
     path: Annotated[str, "Path to save JSON file"],
-    currency: Annotated[str, "Currency"] = "USD",
-    sector: Annotated[str, "Sector"] = "Information Technology",
-    industry_group: Annotated[str, "Industry Group"] = "Software & Services",
-    industry: Annotated[str, "Industry"] = "Software",
-    country: Annotated[str, "Country"] = "United States",
-    market_cap: Annotated[str, "Market Cap"] = "Small Cap",
+    currency: Annotated[str, "Currency"],
+    sector: Annotated[str, "Sector"],
+    industry_group: Annotated[str, "Industry Group"],
+    industry: Annotated[str, "Industry"],
+    country: Annotated[str, "Country"],
+    market_cap: Annotated[str, "Market Cap"],
 ) -> str:
     """Filter and save a list of companies based on specified criteria.
 
     Args:
         path: Path to save JSON file to.
-        currency: Currency of companies. Defaults to "USD".
-        sector: Sector of companies. Defaults to "Information Technology".
-        industry_group: Industry group. Defaults to "Software & Services".
-        industry: Industry. Defaults to "Software".
-        country: Country. Defaults to "United States".
-        market_cap: Market capitalization. Defaults to "Small Cap".
+        currency: Currency of companies
+        sector: Sector of companies.
+        industry_group: Industry group.
+        industry: Industry.
+        country: Country.
+        market_cap: Market capitalization.
 
     Returns:
         str: Completion message
@@ -591,8 +591,8 @@ def get_companies(
     ]
 
     filtered_companies = filtered_companies.dropna(subset=["summary"])
-    if len(filtered_companies) > 10:
-        filtered_companies = filtered_companies.head(10)
+    if len(filtered_companies) > 5:
+        filtered_companies = filtered_companies.head(5)
 
     with open(path, "w") as file:
         json.dump(

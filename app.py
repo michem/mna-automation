@@ -35,12 +35,27 @@ FMP_DATA_DIR = os.path.join(BASE_DIR, "fmp_data")
 VALUATION_DIR = os.path.join(FMP_DATA_DIR, "valuation")
 METRICS_DIR = os.path.join(FMP_DATA_DIR, "metrics")
 
-for directory in [METRICS_DIR, VALUATION_DIR, FMP_DATA_DIR, BASE_DIR]:
-    if os.path.exists(directory):
-        shutil.rmtree(directory)
 
-for directory in [BASE_DIR, FMP_DATA_DIR, VALUATION_DIR, METRICS_DIR]:
-    os.makedirs(directory, exist_ok=True)
+if "STARTUP" not in st.session_state:
+    st.session_state.STARTUP = True
+
+
+def cleanup_outputs_directory():
+    if os.path.exists(BASE_DIR):
+        for filename in os.listdir(BASE_DIR):
+            file_path = os.path.join(BASE_DIR, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                st.error(f"Failed to delete {file_path}. Reason: {e}")
+
+    for directory in [BASE_DIR, FMP_DATA_DIR, VALUATION_DIR, METRICS_DIR]:
+        os.makedirs(directory, exist_ok=True)
+
+    st.info("Outputs directory has been cleaned up.")
 
 
 class Stage(Enum):
@@ -230,7 +245,7 @@ def run_analysis(analysis_container) -> None:
         from run import MANAGER_PROMPT, manager
 
         progress_message = analysis_container.empty()
-        progress_message.info("Running process...")
+        progress_message.info("Running...")
 
         console_container = analysis_container.container()
 
@@ -247,7 +262,6 @@ def run_analysis(analysis_container) -> None:
             if os.path.exists(file_path):
                 display_file(console_container, file_key, file_path)
                 files_displayed.add(file_key)
-                progress_message.info(f"Found and displayed {file_key}...")
 
         if len(files_displayed) == 4:
             print("All files already available, displaying results!\n")
@@ -259,23 +273,21 @@ def run_analysis(analysis_container) -> None:
         for step in result:
             if hasattr(step, "action_output") and step.action_output:
                 print(f"{step.action_output}\n")
-                progress_message.info(step.action_output)
 
             for file_key, file_path in files_to_check.items():
                 if file_key not in files_displayed and os.path.exists(file_path):
                     display_file(console_container, file_key, file_path)
                     files_displayed.add(file_key)
-                    progress_message.info(f"Generated {file_key}...")
+                    st.rerun()
 
         for file_key, file_path in files_to_check.items():
             if file_key not in files_displayed and os.path.exists(file_path):
                 display_file(console_container, file_key, file_path)
                 files_displayed.add(file_key)
-                progress_message.info(f"Found {file_key}...")
+                st.rerun()
 
         if len(files_displayed) == 4:
             print("Analysis process completed successfully!\n")
-            progress_message.success("Analysis process completed successfully!")
         else:
             missing_files = set(files_to_check.keys()) - files_displayed
             progress_message.warning(
@@ -345,6 +357,10 @@ def main():
         """,
         unsafe_allow_html=True,
     )
+
+    if st.session_state.STARTUP:
+        cleanup_outputs_directory()
+        st.session_state.STARTUP = False
 
     col1, col2, col3 = st.columns([0.25, 0.5, 0.25])
     with col2:
