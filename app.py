@@ -238,7 +238,7 @@ def run_analysis(analysis_container) -> None:
         for step in result:
             if hasattr(step, "action_output") and step.action_output:
                 print(f"{step.action_output}\n")
-                progress_message.code(step.action_output)
+                progress_message.info(step.action_output)
 
             if "strategy_info" not in files_displayed and os.path.exists(
                 "outputs/strategy_info.json"
