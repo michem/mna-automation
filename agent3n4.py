@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel, ManagedAgent, ToolCallingAgent
+from smolagents import LiteLLMModel, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import ANALYST_PROMPT
@@ -17,9 +17,10 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.0,
+    temperature=0.2,
 )
 analyst = ToolCallingAgent(
+    name="analyst",
     tools=[
         collect_financial_metrics,
         get_company_profile,
@@ -29,9 +30,11 @@ analyst = ToolCallingAgent(
     ],
     model=model,
     max_steps=20,
+    description="A financial analyst agent that generates a comprehensive M&A strategy report based on the provided prompt.",
 )
-managed_analyst = ManagedAgent(
-    agent=analyst,
-    name="analyst",
-    description=ANALYST_PROMPT,
-)
+
+if __name__ == "__main__":
+    response = analyst.run(
+        ANALYST_PROMPT,
+        reset=False,
+    )
