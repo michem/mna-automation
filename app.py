@@ -210,7 +210,7 @@ def run_analysis(analysis_container) -> None:
 
         for step in result:
             if hasattr(step, "action_output") and step.action_output:
-                analysis_container.write(step.action_output)
+                st.write(step.action_output)
 
             if os.path.exists("outputs/critic_companies.json"):
                 with open("outputs/critic_companies.json", "r") as f:
@@ -232,7 +232,7 @@ def run_analysis(analysis_container) -> None:
 
 
 def initialize_gemini():
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",

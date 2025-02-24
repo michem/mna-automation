@@ -8,7 +8,7 @@ if MODEL_PROVIDER == "openai":
     MODEL_API_KEY = os.getenv("OPENAI_API_KEY")
 elif MODEL_PROVIDER == "gemini":
     MODEL_ID = "gemini/gemini-2.0-flash"
-    MODEL_API_KEY = os.getenv("GEMINI_API_KEY")
+    MODEL_API_KEY = os.getenv("GOOGLE_API_KEY")
 else:
     raise ValueError("Unsupported MODEL_PROVIDER. Choose 'openai' or 'gemini'.")
 
