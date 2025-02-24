@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 from smolagents import CodeAgent, LiteLLMModel
 
-from agent1 import managed_strategist
-from agent2 import managed_critic, managed_researcher
-from agent3n4 import managed_analyst
-from agent5 import managed_valuator
+from agent1 import strategist
+from agent2 import critic, researcher
+from agent3n4 import analyst
+from agent5 import valuator
 from config import MODEL_API_KEY, MODEL_ID, VALUATION_REPORT_PATH
 from prompts import (
     ANALYST_PROMPT,
@@ -33,18 +33,18 @@ Stop the chat/process once {VALUATION_REPORT_PATH } is generated.
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.0,
+    temperature=0.2,
 )
 manager = CodeAgent(
     tools=[],
     model=model,
     additional_authorized_imports=["json", "os"],
     managed_agents=[
-        managed_strategist,
-        managed_researcher,
-        managed_critic,
-        managed_analyst,
-        managed_valuator,
+        strategist,
+        researcher,
+        critic,
+        analyst,
+        valuator,
     ],
 )
 
