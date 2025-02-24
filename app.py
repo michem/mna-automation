@@ -237,7 +237,7 @@ def initialize_gemini():
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
         generation_config={
-            "temperature": 0.1,
+            "temperature": 0.2,
             "top_p": 0.9,
             "top_k": 40,
             "max_output_tokens": 2048,
