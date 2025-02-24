@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 .vscode/
 prompts/
+outputs/
 
 
 # C extensions
