@@ -8,11 +8,7 @@ from tools import read_from_json, save_to_markdown
 load_dotenv()
 
 
-model = LiteLLMModel(
-    model_id=MODEL_ID,
-    api_key=MODEL_API_KEY,
-    temperature=0.0,
-)
+model = LiteLLMModel(model_id=MODEL_ID, api_key=MODEL_API_KEY, temperature=0.4)
 strategist = CodeAgent(
     tools=[save_to_markdown, read_from_json],
     additional_authorized_imports=["json", "os"],

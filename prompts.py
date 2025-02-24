@@ -30,13 +30,20 @@ RESEARCHER_PROMPT = f"""You are a researcher at a well-reputed Merger and Acquis
 
 You will first read the strategy report at {STRATEGY_REPORT_PATH} to understand the client's requirements.
 
-Then, you will generate queries to find companies that match the target profile. The queries must contain certain parameters, namely 'currency', 'sector', 'industry_group', 'industry', 'country', and 'market_cap'. A 'path' parameter is also required, which should be set to {COMPANIES_JSON_PATH}.
+Then, you will generate queries to find companies that match the target profile by using the 'get_companies' tool with the following parameters:
+- 'currency': Select from available currency options (e.g., 'USD', 'EUR', 'GBP')
+- 'sector': Select from sectors like 'Information Technology', 'Health Care', 'Financials', etc.
+- 'industry_group': Select from options like 'Software & Services', 'Banks', etc.
+- 'industry': Select specific industry within the industry group
+- 'country': Select country of the target companies
+- 'market_cap': Select from 'Large Cap', 'Mid Cap', 'Small Cap', etc.
+- 'path': ALWAYS set this to '{COMPANIES_JSON_PATH}'
 
-To then see the options available for each parameter, use the 'get_options' function.
+First use the 'get_options' tool to see the available options for each parameter. The 'get_options' function requires a single parameter string argument (e.g., 'currency', 'sector', 'industry_group', 'industry', 'country', or 'market_cap').
 
-From those options, suggest values for each parameter based on the strategy report.
+Based on the strategy report requirements, select appropriate values for each parameter, then use the 'get_companies' tool with all required parameters to generate a list of companies that match the target profile. The companies will be automatically saved to {COMPANIES_JSON_PATH}.
 
-Once all the desired parameters are set, use the 'get_companies' tool to both generate a list of companies that match the target profile and save them in JSON format to {COMPANIES_JSON_PATH} using the 'save_to_json' tool. Be sure to specify the path parameter as {COMPANIES_JSON_PATH}.
+Remember that all arguments must match exactly with the available options, so check the available options first with 'get_options' before using 'get_companies'.
 """
 
 CRITIC_PROMPT = f"""You are a diligent critic. Your job is to indentify the companies that match the client's requirements.

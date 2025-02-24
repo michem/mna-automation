@@ -228,11 +228,27 @@ def run_analysis(analysis_container) -> None:
         progress_message.info("Starting analysis process...")
 
         console_container = analysis_container.container()
-        strategy_container = analysis_container.container()
-        critic_container = analysis_container.container()
-        valuation_container = analysis_container.container()
+
+        files_to_check = {
+            "strategy_info": "outputs/strategy_info.json",
+            "companies": "outputs/companies.json",
+            "valuation_report": "outputs/valuation.md",
+            "strategy_report": "outputs/output.md",
+        }
 
         files_displayed = set()
+
+        for file_key, file_path in files_to_check.items():
+            if os.path.exists(file_path):
+                display_file(console_container, file_key, file_path)
+                files_displayed.add(file_key)
+                progress_message.info(f"Found and displayed {file_key}...")
+
+        if len(files_displayed) == 4:
+            print("All files already available, displaying results!\n")
+            progress_message.success("Analysis process completed successfully!")
+            return
+
         result = manager.run(MANAGER_PROMPT, stream=True)
 
         for step in result:
@@ -240,46 +256,60 @@ def run_analysis(analysis_container) -> None:
                 print(f"{step.action_output}\n")
                 progress_message.info(step.action_output)
 
-            if "strategy_info" not in files_displayed and os.path.exists(
-                "outputs/strategy_info.json"
-            ):
-                print("Processing strategy information...\n")
-                with strategy_container.expander(
-                    "Strategy Information", expanded=False
-                ):
-                    with open("outputs/strategy_info.json", "r") as f:
-                        strategy_data = json.load(f)
-                        st.code(json.dumps(strategy_data, indent=2), language="json")
-                progress_message.info("Strategy information processed")
-                files_displayed.add("strategy_info")
+            for file_key, file_path in files_to_check.items():
+                if file_key not in files_displayed and os.path.exists(file_path):
+                    display_file(console_container, file_key, file_path)
+                    files_displayed.add(file_key)
+                    progress_message.info(f"Generated {file_key}...")
 
-            if "critic_companies" not in files_displayed and os.path.exists(
-                "outputs/critic_companies.json"
-            ):
-                print("Processing critic's analysis...\n")
-                with critic_container.expander("Researched Companies", expanded=False):
-                    with open("outputs/critic_companies.json", "r") as f:
-                        critic_data = json.load(f)
-                        st.code(json.dumps(critic_data, indent=2), language="json")
-                progress_message.info("Critic's analysis completed")
-                files_displayed.add("critic_companies")
+        for file_key, file_path in files_to_check.items():
+            if file_key not in files_displayed and os.path.exists(file_path):
+                display_file(console_container, file_key, file_path)
+                files_displayed.add(file_key)
+                progress_message.info(f"Found {file_key}...")
 
-        if os.path.exists("outputs/valuation.md"):
-            print("Generating valuation report...\n")
-            with valuation_container.expander("Valuation Report", expanded=False):
-                with open("outputs/valuation.md", "r") as f:
-                    st.code(f.read())
-            progress_message.info("Valuation report generated")
-            files_displayed.add("valuation_report")
-
-        if len(files_displayed) == 3:
+        if len(files_displayed) == 4:
             print("Analysis process completed successfully!\n")
-            progress_message.empty()
+            progress_message.success("Analysis process completed successfully!")
+        else:
+            missing_files = set(files_to_check.keys()) - files_displayed
+            progress_message.warning(
+                f"Analysis complete but some files were not generated. Found {len(files_displayed)}/4 files. Missing: {', '.join(missing_files)}"
+            )
 
     except Exception as e:
         error_msg = f"Analysis failed: {str(e)}"
-        st.error(error_msg)
+        analysis_container.error(error_msg)
         print(f"Error: {error_msg}\n")
+
+
+def display_file(container, file_key, file_path):
+    """Display a file in an expander with appropriate formatting"""
+    if file_key == "strategy_info":
+        print("Processing strategy information...\n")
+        with container.expander("Strategy Information", expanded=False):
+            with open(file_path, "r") as f:
+                strategy_data = json.load(f)
+                st.code(json.dumps(strategy_data, indent=2), language="json")
+
+    elif file_key == "companies":
+        print("Processing researched companies...\n")
+        with container.expander("Researched Companies", expanded=False):
+            with open(file_path, "r") as f:
+                companies_data = json.load(f)
+                st.code(json.dumps(companies_data, indent=2), language="json")
+
+    elif file_key == "valuation_report":
+        print("Generating valuation report...\n")
+        with container.expander("Valuation Report", expanded=False):
+            with open(file_path, "r") as f:
+                st.code(f.read())
+
+    elif file_key == "strategy_report":
+        print("Generating strategy report...\n")
+        with container.expander("Strategy Report", expanded=False):
+            with open(file_path, "r") as f:
+                st.markdown(f.read())
 
 
 def initialize_gemini():
@@ -288,7 +318,7 @@ def initialize_gemini():
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
         generation_config={
-            "temperature": 0.0,
+            "temperature": 0.2,
             "top_p": 0.9,
             "top_k": 40,
             "max_output_tokens": 2048,

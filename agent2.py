@@ -15,15 +15,21 @@ from tools import (
 load_dotenv()
 
 
-model = LiteLLMModel(
+model_r = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
     temperature=0.0,
 )
+model_c = LiteLLMModel(
+    model_id=MODEL_ID,
+    api_key=MODEL_API_KEY,
+    temperature=0.2,
+)
+
 researcher = CodeAgent(
     tools=[get_companies, read_from_markdown, get_options, save_to_json],
     additional_authorized_imports=["json", "os"],
-    model=model,
+    model=model_r,
     max_steps=15,
 )
 managed_researcher = ManagedAgent(
@@ -34,7 +40,7 @@ managed_researcher = ManagedAgent(
 
 critic = ToolCallingAgent(
     tools=[get_names_and_summaries, read_from_json, save_to_json, read_from_markdown],
-    model=model,
+    model=model_c,
     max_steps=10,
 )
 managed_critic = ManagedAgent(

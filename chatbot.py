@@ -31,7 +31,7 @@ os.makedirs(metrics_dir, exist_ok=True)
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.0,
+    temperature=0.4,
 )
 
 # Initialize the multiagent
@@ -114,7 +114,7 @@ Always respond in this JSON format. Be decisive and direct - if you can extract 
             name="M&A Strategy Consultant",
             instructions=self.system_instructions,
             model="gpt-4-turbo-preview",
-            temperature=0.0,
+            temperature=0.4,
         )
         self.assistant_id = self.assistant.id
         thread = self.client.beta.threads.create()
