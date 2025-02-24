@@ -27,6 +27,7 @@ analyst = ToolCallingAgent(
         read_from_json,
         read_from_markdown,
     ],
+    additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=20,
 )

@@ -22,6 +22,7 @@ model = LiteLLMModel(
 )
 researcher = CodeAgent(
     tools=[get_companies, read_from_markdown, get_options, save_to_json],
+    additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=15,
 )
@@ -33,6 +34,7 @@ managed_researcher = ManagedAgent(
 
 critic = ToolCallingAgent(
     tools=[get_names_and_summaries, read_from_json, save_to_json, read_from_markdown],
+    additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=10,
 )
