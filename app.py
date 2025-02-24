@@ -288,7 +288,7 @@ def initialize_gemini():
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
         generation_config={
-            "temperature": 0.2,
+            "temperature": 0.0,
             "top_p": 0.9,
             "top_k": 40,
             "max_output_tokens": 2048,
@@ -327,7 +327,6 @@ def main():
 
     bot = st.session_state.bot
 
-    # Render conversation as chat bubbles
     for message in bot.conversation_history:
         if message.role == "bot":
             st.chat_message("assistant").write(message.text)
