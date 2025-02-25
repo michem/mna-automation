@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -14,35 +13,21 @@ import google.generativeai as genai
 import streamlit as st
 import watchdog.events
 import watchdog.observers
+from streamlit_autorefresh import st_autorefresh
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
-
-
-class StreamlitOutputRedirector:
-    def __init__(self, placeholder):
-        self.buffer = ""
-        self.placeholder = placeholder
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-
-    def write(self, text):
-        self.buffer += text
-        self.placeholder.code(self.buffer)
-        self._original_stdout.write(text)
-
-    def flush(self):
-        pass
-
-    def reset(self):
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
-
 
 BASE_DIR = "outputs"
 FMP_DATA_DIR = os.path.join(BASE_DIR, "fmp_data")
 
 
+STRATEGY_INFO_PATH = os.path.join(BASE_DIR, "strategy_info.json")
+STRATEGY_REPORT_PATH = os.path.join(BASE_DIR, "output.md")
+COMPANIES_PATH = os.path.join(BASE_DIR, "companies.json")
+VALUATION_REPORT_PATH = os.path.join(BASE_DIR, "valuation.md")
+
+
 if "PROCESSING_STATUS" not in st.session_state:
-    st.session_state.PROCESSING_STATUS = {
+    st.session_state["PROCESSING_STATUS"] = {
         "current_agent": None,
         "current_task": None,
         "start_time": None,
@@ -50,154 +35,39 @@ if "PROCESSING_STATUS" not in st.session_state:
         "message": "Ready to start analysis",
         "error": None,
         "completed_tasks": set(),
-        "total_tasks": 5,
+        "total_tasks": 4,
         "is_running": False,
-        "cancelling": False,
     }
 
 if "FILE_UPDATES" not in st.session_state:
-    st.session_state.FILE_UPDATES = {
+    st.session_state["FILE_UPDATES"] = {
         "strategy_info": None,
         "strategy_report": None,
         "companies": None,
         "valuation_report": None,
-    }
-
-if "EXPANDER_STATES" not in st.session_state:
-    st.session_state.EXPANDER_STATES = {
-        "strategy_info": False,
-        "strategy_report": False,
-        "companies": False,
-        "valuation_report": False,
+        "fmp_data": {},
     }
 
 if "STARTUP" not in st.session_state:
-    st.session_state.STARTUP = True
+    st.session_state["STARTUP"] = True
 
 if "OBSERVER" not in st.session_state:
-    st.session_state.OBSERVER = None
+    st.session_state["OBSERVER"] = None
 
 if "ANALYSIS_THREAD_STARTED" not in st.session_state:
-    st.session_state.ANALYSIS_THREAD_STARTED = False
+    st.session_state["ANALYSIS_THREAD_STARTED"] = False
+
+if "conversation_ended" not in st.session_state:
+    st.session_state["conversation_ended"] = False
+
+if "analysis_started" not in st.session_state:
+    st.session_state["analysis_started"] = False
+
+if "LAST_UPDATE_CHECK" not in st.session_state:
+    st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
 
 
-def check_file_updates():
-    if "PROCESSING_STATUS" not in st.session_state:
-        st.session_state.PROCESSING_STATUS = {
-            "current_agent": None,
-            "current_task": None,
-            "start_time": None,
-            "progress": 0.0,
-            "message": "Ready to start analysis",
-            "error": None,
-            "completed_tasks": set(),
-            "total_tasks": 5,
-            "is_running": False,
-            "cancelling": False,
-        }
-
-    if "FILE_UPDATES" not in st.session_state:
-        st.session_state.FILE_UPDATES = {
-            "strategy_info": None,
-            "strategy_report": None,
-            "companies": None,
-            "valuation_report": None,
-        }
-
-    if "EXPANDER_STATES" not in st.session_state:
-        st.session_state.EXPANDER_STATES = {
-            "strategy_info": False,
-            "strategy_report": False,
-            "companies": False,
-            "valuation_report": False,
-        }
-
-    files_to_check = {
-        "strategy_info": (
-            "outputs/strategy_info.json",
-            0.25,
-            "Strategy information collected",
-            "Researching companies",
-            "strategy",
-        ),
-        "strategy_report": (
-            "outputs/output.md",
-            0.5,
-            "Strategy report generated",
-            "Analyzing financials",
-            "report",
-        ),
-        "companies": (
-            "outputs/companies.json",
-            0.75,
-            "Companies identified",
-            "Performing valuation",
-            "companies",
-        ),
-        "valuation_report": (
-            "outputs/valuation.md",
-            1.0,
-            "Valuation complete",
-            "Analysis complete",
-            "valuation",
-        ),
-    }
-
-    files_found = 0
-    latest_progress = 0.0
-
-    fmp_files_found = False
-    if os.path.exists("outputs/fmp_data"):
-        fmp_files = os.listdir("outputs/fmp_data")
-        if any(
-            f.endswith("_valuation.md") or f.endswith("_metrics.md") for f in fmp_files
-        ):
-            fmp_files_found = True
-            print(f"Found company files in outputs/fmp_data: {fmp_files}")
-
-    for file_key, (
-        file_path,
-        progress,
-        message,
-        task,
-        task_id,
-    ) in files_to_check.items():
-        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-            files_found += 1
-            latest_progress = max(latest_progress, progress)
-            st.session_state.FILE_UPDATES[file_key] = datetime.now()
-            st.session_state.EXPANDER_STATES[file_key] = True
-
-            if progress > st.session_state.PROCESSING_STATUS["progress"]:
-                st.session_state.PROCESSING_STATUS["progress"] = progress
-                st.session_state.PROCESSING_STATUS["message"] = message
-                st.session_state.PROCESSING_STATUS["current_task"] = task
-                st.session_state.PROCESSING_STATUS["completed_tasks"].add(task_id)
-
-    if (
-        files_found == 3
-        and fmp_files_found
-        and "valuation_report" not in st.session_state.FILE_UPDATES
-    ):
-        print("Found 3/4 files plus FMP data - assuming process nearly complete")
-
-    if files_found == 4 and st.session_state.PROCESSING_STATUS["is_running"]:
-        st.session_state.PROCESSING_STATUS["is_running"] = False
-        st.session_state.PROCESSING_STATUS["message"] = "Analysis complete"
-        st.session_state.PROCESSING_STATUS["progress"] = 1.0
-        st.session_state.ANALYSIS_THREAD_STARTED = True
-
-    if (
-        not st.session_state.PROCESSING_STATUS["is_running"]
-        and files_found < 4
-        and fmp_files_found
-    ):
-        print("Process completed but missing some main files - checking FMP data")
-
-    return files_found
-
-
-class FileChangeHandler(FileSystemEventHandler):
+class ImprovedFileChangeHandler(FileSystemEventHandler):
     def on_created(self, event):
         self._process_change(event)
 
@@ -208,16 +78,19 @@ class FileChangeHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
+        file_path = str(Path(event.src_path))
+
         if "FILE_UPDATES" not in st.session_state:
-            st.session_state.FILE_UPDATES = {
+            st.session_state["FILE_UPDATES"] = {
                 "strategy_info": None,
                 "strategy_report": None,
                 "companies": None,
                 "valuation_report": None,
+                "fmp_data": {},
             }
 
         if "PROCESSING_STATUS" not in st.session_state:
-            st.session_state.PROCESSING_STATUS = {
+            st.session_state["PROCESSING_STATUS"] = {
                 "current_agent": None,
                 "current_task": None,
                 "start_time": None,
@@ -225,70 +98,82 @@ class FileChangeHandler(FileSystemEventHandler):
                 "message": "Ready to start analysis",
                 "error": None,
                 "completed_tasks": set(),
-                "total_tasks": 5,
+                "total_tasks": 4,
                 "is_running": False,
-                "cancelling": False,
             }
-
-        if "EXPANDER_STATES" not in st.session_state:
-            st.session_state.EXPANDER_STATES = {
-                "strategy_info": False,
-                "strategy_report": False,
-                "companies": False,
-                "valuation_report": False,
-            }
-
-        path = Path(event.src_path)
-        file_path = str(path)
 
         if file_path.endswith("strategy_info.json"):
-            st.session_state.FILE_UPDATES["strategy_info"] = datetime.now()
-            st.session_state.EXPANDER_STATES["strategy_info"] = True
-            st.session_state.PROCESSING_STATUS["progress"] = 0.25
-            st.session_state.PROCESSING_STATUS["message"] = (
-                "Strategy information collected"
+            st.session_state["FILE_UPDATES"]["strategy_info"] = datetime.now()
+            st.session_state["PROCESSING_STATUS"]["progress"] = max(
+                0.25, st.session_state["PROCESSING_STATUS"]["progress"]
             )
-            st.session_state.PROCESSING_STATUS["current_task"] = "Researching companies"
-            st.session_state.PROCESSING_STATUS["completed_tasks"].add("strategy")
-        elif file_path.endswith("output.md"):
-            st.session_state.FILE_UPDATES["strategy_report"] = datetime.now()
-            st.session_state.EXPANDER_STATES["strategy_report"] = True
-            st.session_state.PROCESSING_STATUS["progress"] = 0.5
-            st.session_state.PROCESSING_STATUS["message"] = "Strategy report generated"
-            st.session_state.PROCESSING_STATUS["current_task"] = "Analyzing financials"
-            st.session_state.PROCESSING_STATUS["completed_tasks"].add("report")
-        elif file_path.endswith("companies.json"):
-            st.session_state.FILE_UPDATES["companies"] = datetime.now()
-            st.session_state.EXPANDER_STATES["companies"] = True
-            st.session_state.PROCESSING_STATUS["progress"] = 0.75
-            st.session_state.PROCESSING_STATUS["message"] = "Companies identified"
-            st.session_state.PROCESSING_STATUS["current_task"] = "Performing valuation"
-            st.session_state.PROCESSING_STATUS["completed_tasks"].add("companies")
-        elif file_path.endswith("valuation.md"):
-            st.session_state.FILE_UPDATES["valuation_report"] = datetime.now()
-            st.session_state.EXPANDER_STATES["valuation_report"] = True
-            st.session_state.PROCESSING_STATUS["progress"] = 1.0
-            st.session_state.PROCESSING_STATUS["message"] = "Valuation complete"
-            st.session_state.PROCESSING_STATUS["current_task"] = "Analysis complete"
-            st.session_state.PROCESSING_STATUS["completed_tasks"].add("valuation")
-            st.session_state.PROCESSING_STATUS["is_running"] = False
+            st.session_state["PROCESSING_STATUS"][
+                "message"
+            ] = "Strategy information collected"
+            st.session_state["PROCESSING_STATUS"][
+                "current_task"
+            ] = "Researching companies"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("strategy")
 
-        if "_metrics.md" in file_path or "_valuation.md" in file_path:
-            company_symbol = os.path.basename(file_path).split("_")[0]
-            st.session_state.PROCESSING_STATUS["message"] = (
-                f"Processing financial data for {company_symbol}"
+        elif file_path.endswith("output.md"):
+            st.session_state["FILE_UPDATES"]["strategy_report"] = datetime.now()
+            st.session_state["PROCESSING_STATUS"]["progress"] = max(
+                0.5, st.session_state["PROCESSING_STATUS"]["progress"]
             )
+            st.session_state["PROCESSING_STATUS"][
+                "message"
+            ] = "Strategy report generated"
+            st.session_state["PROCESSING_STATUS"][
+                "current_task"
+            ] = "Analyzing financials"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("report")
+
+        elif file_path.endswith("companies.json"):
+            st.session_state["FILE_UPDATES"]["companies"] = datetime.now()
+            st.session_state["PROCESSING_STATUS"]["progress"] = max(
+                0.75, st.session_state["PROCESSING_STATUS"]["progress"]
+            )
+            st.session_state["PROCESSING_STATUS"]["message"] = "Companies identified"
+            st.session_state["PROCESSING_STATUS"][
+                "current_task"
+            ] = "Performing valuation"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("companies")
+
+        elif file_path.endswith("valuation.md"):
+            st.session_state["FILE_UPDATES"]["valuation_report"] = datetime.now()
+            st.session_state["PROCESSING_STATUS"]["progress"] = 1.0
+            st.session_state["PROCESSING_STATUS"]["message"] = "Valuation complete"
+            st.session_state["PROCESSING_STATUS"]["current_task"] = "Analysis complete"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("valuation")
+            st.session_state["PROCESSING_STATUS"]["is_running"] = False
+
+        elif file_path.startswith(FMP_DATA_DIR) and (
+            file_path.endswith("_metrics.md") or file_path.endswith("_valuation.md")
+        ):
+            filename = os.path.basename(file_path)
+            st.session_state["FILE_UPDATES"]["fmp_data"][filename] = datetime.now()
+            company_symbol = filename.split("_")[0]
+            st.session_state["PROCESSING_STATUS"][
+                "message"
+            ] = f"Processing financial data for {company_symbol}"
 
         st.rerun()
 
 
 def setup_file_watcher():
-    if st.session_state.OBSERVER is None or not st.session_state.OBSERVER.is_alive():
-        event_handler = FileChangeHandler()
+    """Setup a watchdog observer to monitor file changes"""
+    if "OBSERVER" not in st.session_state:
+        st.session_state["OBSERVER"] = None
+
+    if (
+        st.session_state["OBSERVER"] is None
+        or not st.session_state["OBSERVER"].is_alive()
+    ):
+        event_handler = ImprovedFileChangeHandler()
         observer = watchdog.observers.Observer()
         observer.schedule(event_handler, path=BASE_DIR, recursive=True)
         observer.start()
-        st.session_state.OBSERVER = observer
+        st.session_state["OBSERVER"] = observer
         print(f"File watcher started for {BASE_DIR}")
 
 
@@ -308,36 +193,141 @@ def cleanup_outputs_directory():
     for directory in [BASE_DIR, FMP_DATA_DIR]:
         os.makedirs(directory, exist_ok=True)
 
-    st.session_state.PROCESSING_STATUS = {
+    st.session_state["PROCESSING_STATUS"] = {
         "current_agent": None,
         "current_task": None,
         "start_time": None,
         "progress": 0.0,
-        "message": "Outputs directory has been cleaned up",
+        "message": "Ready to start analysis",
         "error": None,
         "completed_tasks": set(),
-        "total_tasks": 5,
+        "total_tasks": 4,
         "is_running": False,
-        "cancelling": False,
     }
 
-    st.session_state.FILE_UPDATES = {
+    st.session_state["FILE_UPDATES"] = {
         "strategy_info": None,
         "strategy_report": None,
         "companies": None,
         "valuation_report": None,
+        "fmp_data": {},
     }
 
-    st.session_state.EXPANDER_STATES = {
-        "strategy_info": False,
-        "strategy_report": False,
-        "companies": False,
-        "valuation_report": False,
+    st.session_state["ANALYSIS_THREAD_STARTED"] = False
+    st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
+
+
+def check_file_updates():
+    """Check for file updates and update session state accordingly"""
+
+    if "PROCESSING_STATUS" not in st.session_state:
+        st.session_state["PROCESSING_STATUS"] = {
+            "current_agent": None,
+            "current_task": None,
+            "start_time": None,
+            "progress": 0.0,
+            "message": "Ready to start analysis",
+            "error": None,
+            "completed_tasks": set(),
+            "total_tasks": 4,
+            "is_running": False,
+        }
+
+    if "FILE_UPDATES" not in st.session_state:
+        st.session_state["FILE_UPDATES"] = {
+            "strategy_info": None,
+            "strategy_report": None,
+            "companies": None,
+            "valuation_report": None,
+            "fmp_data": {},
+        }
+
+    if "LAST_UPDATE_CHECK" not in st.session_state:
+        st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
+
+    if "ANALYSIS_THREAD_STARTED" not in st.session_state:
+        st.session_state["ANALYSIS_THREAD_STARTED"] = False
+
+    st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
+
+    files_to_check = {
+        "strategy_info": (
+            STRATEGY_INFO_PATH,
+            0.25,
+            "Strategy information collected",
+            "Researching companies",
+            "strategy",
+        ),
+        "strategy_report": (
+            STRATEGY_REPORT_PATH,
+            0.5,
+            "Strategy report generated",
+            "Analyzing financials",
+            "report",
+        ),
+        "companies": (
+            COMPANIES_PATH,
+            0.75,
+            "Companies identified",
+            "Performing valuation",
+            "companies",
+        ),
+        "valuation_report": (
+            VALUATION_REPORT_PATH,
+            1.0,
+            "Valuation complete",
+            "Analysis complete",
+            "valuation",
+        ),
     }
 
-    st.session_state.ANALYSIS_THREAD_STARTED = False
+    files_found = 0
+    latest_progress = 0.0
 
-    st.success("Outputs directory has been cleaned up.")
+    fmp_files_found = False
+    if os.path.exists(FMP_DATA_DIR):
+        fmp_files = [
+            f
+            for f in os.listdir(FMP_DATA_DIR)
+            if f.endswith("_valuation.md") or f.endswith("_metrics.md")
+        ]
+        for fmp_file in fmp_files:
+            file_path = os.path.join(FMP_DATA_DIR, fmp_file)
+            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                st.session_state["FILE_UPDATES"]["fmp_data"][fmp_file] = datetime.now()
+                fmp_files_found = True
+
+    for file_key, (
+        file_path,
+        progress,
+        message,
+        task,
+        task_id,
+    ) in files_to_check.items():
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            files_found += 1
+            latest_progress = max(latest_progress, progress)
+            st.session_state["FILE_UPDATES"][file_key] = datetime.now()
+
+            if progress > st.session_state["PROCESSING_STATUS"]["progress"]:
+                st.session_state["PROCESSING_STATUS"]["progress"] = progress
+                st.session_state["PROCESSING_STATUS"]["message"] = message
+                st.session_state["PROCESSING_STATUS"]["current_task"] = task
+                st.session_state["PROCESSING_STATUS"]["completed_tasks"].add(task_id)
+
+    if files_found == 4 and st.session_state["PROCESSING_STATUS"]["is_running"]:
+        st.session_state["PROCESSING_STATUS"].update(
+            {
+                "is_running": False,
+                "message": "Analysis complete",
+                "progress": 1.0,
+                "current_task": "Complete",
+            }
+        )
+        st.session_state["ANALYSIS_THREAD_STARTED"] = True
+        st.rerun()
+
+    return files_found
 
 
 class Stage(Enum):
@@ -552,7 +542,7 @@ If you have trouble parsing the user's message, try to extract relevant informat
                     time.sleep(1)
                     continue
 
-                st.error(f"Error in processing: {str(e)}")
+                print(f"Error in processing: {str(e)}")
 
                 if (
                     self.current_stage == Stage.INDUSTRY
@@ -571,10 +561,12 @@ If you have trouble parsing the user's message, try to extract relevant informat
                 )
 
 
-def run_analysis_thread(analysis_container):
+def run_analysis_thread():
+    """Run the analysis process in a separate thread"""
     try:
+
         if "PROCESSING_STATUS" not in st.session_state:
-            st.session_state.PROCESSING_STATUS = {
+            st.session_state["PROCESSING_STATUS"] = {
                 "current_agent": None,
                 "current_task": None,
                 "start_time": None,
@@ -582,267 +574,120 @@ def run_analysis_thread(analysis_container):
                 "message": "Ready to start analysis",
                 "error": None,
                 "completed_tasks": set(),
-                "total_tasks": 5,
+                "total_tasks": 4,
                 "is_running": False,
-                "cancelling": False,
             }
-
-        if "ANALYSIS_THREAD_STARTED" not in st.session_state:
-            st.session_state.ANALYSIS_THREAD_STARTED = False
-
-        if "FILE_UPDATES" not in st.session_state:
-            st.session_state.FILE_UPDATES = {
-                "strategy_info": None,
-                "strategy_report": None,
-                "companies": None,
-                "valuation_report": None,
-            }
-
-        if "EXPANDER_STATES" not in st.session_state:
-            st.session_state.EXPANDER_STATES = {
-                "strategy_info": False,
-                "strategy_report": False,
-                "companies": False,
-                "valuation_report": False,
-            }
-
-        st.session_state.ANALYSIS_THREAD_STARTED = True
 
         from run import MANAGER_PROMPT, manager
 
-        st.session_state.PROCESSING_STATUS["start_time"] = datetime.now()
-        st.session_state.PROCESSING_STATUS["is_running"] = True
-        st.session_state.PROCESSING_STATUS["current_agent"] = "strategist"
-        st.session_state.PROCESSING_STATUS["current_task"] = (
-            "Generating strategy report"
-        )
-        st.session_state.PROCESSING_STATUS["message"] = "Starting analysis..."
+        st.session_state["PROCESSING_STATUS"]["start_time"] = datetime.now()
+        st.session_state["PROCESSING_STATUS"]["is_running"] = True
+        st.session_state["PROCESSING_STATUS"]["current_agent"] = "strategist"
+        st.session_state["PROCESSING_STATUS"][
+            "current_task"
+        ] = "Generating strategy report"
+        st.session_state["PROCESSING_STATUS"]["message"] = "Starting analysis..."
 
         try:
             result = manager.run(MANAGER_PROMPT, stream=True)
 
             for step in result:
-                if st.session_state.PROCESSING_STATUS["cancelling"]:
-                    print("Analysis cancelled by user")
-                    st.session_state.PROCESSING_STATUS["message"] = (
-                        "Analysis cancelled by user"
-                    )
-                    st.session_state.PROCESSING_STATUS["is_running"] = False
-                    break
-
                 if hasattr(step, "action_output") and step.action_output:
                     print(f"{step.action_output}\n")
 
                     if "MNA_PROCESS_COMPLETE" in str(step.action_output):
                         print("MNA process completion signal detected!")
-                        st.session_state.PROCESSING_STATUS["is_running"] = False
-                        st.session_state.PROCESSING_STATUS["message"] = (
-                            "Analysis complete"
+                        st.session_state["PROCESSING_STATUS"].update(
+                            {
+                                "is_running": False,
+                                "message": "Analysis complete",
+                                "progress": 1.0,
+                                "current_task": "Complete",
+                            }
                         )
-                        st.session_state.PROCESSING_STATUS["progress"] = 1.0
-                        files_found = check_file_updates()
-                        print(f"Found {files_found}/4 output files")
-                        st.session_state.ANALYSIS_THREAD_STARTED = True
-
-                        if files_found == 4:
-                            st.stop()
+                        check_file_updates()
+                        st.rerun()
 
                 if hasattr(step, "agent_name") and step.agent_name:
-                    st.session_state.PROCESSING_STATUS["current_agent"] = (
-                        step.agent_name
-                    )
+                    st.session_state["PROCESSING_STATUS"][
+                        "current_agent"
+                    ] = step.agent_name
 
                     if step.agent_name == "strategist":
-                        st.session_state.PROCESSING_STATUS["current_task"] = (
-                            "Generating strategy report"
-                        )
+                        st.session_state["PROCESSING_STATUS"][
+                            "current_task"
+                        ] = "Generating strategy report"
                     elif step.agent_name == "researcher":
-                        st.session_state.PROCESSING_STATUS["current_task"] = (
-                            "Researching companies"
-                        )
+                        st.session_state["PROCESSING_STATUS"][
+                            "current_task"
+                        ] = "Researching companies"
                     elif step.agent_name == "analyst":
-                        st.session_state.PROCESSING_STATUS["current_task"] = (
-                            "Analyzing financials"
-                        )
+                        st.session_state["PROCESSING_STATUS"][
+                            "current_task"
+                        ] = "Analyzing financials"
                     elif step.agent_name == "valuator":
-                        st.session_state.PROCESSING_STATUS["current_task"] = (
-                            "Generating valuation report"
+                        st.session_state["PROCESSING_STATUS"][
+                            "current_task"
+                        ] = "Generating valuation report"
+
+                    progress_updates = {
+                        "strategist": (0.25, "Generating strategy report"),
+                        "researcher": (0.5, "Researching companies"),
+                        "analyst": (0.75, "Analyzing financials"),
+                        "valuator": (1.0, "Generating valuation report"),
+                    }
+
+                    if step.agent_name in progress_updates:
+                        progress, task = progress_updates[step.agent_name]
+                        st.session_state["PROCESSING_STATUS"].update(
+                            {
+                                "progress": progress,
+                                "current_task": task,
+                                "message": f"Working on {task.lower()}",
+                            }
                         )
+                        st.rerun()
 
             check_file_updates()
 
         except Exception as e:
             error_msg = f"Analysis error: {str(e)}"
-            st.session_state.PROCESSING_STATUS["error"] = error_msg
-            st.session_state.PROCESSING_STATUS["message"] = "Error during analysis"
+            st.session_state["PROCESSING_STATUS"]["error"] = error_msg
+            st.session_state["PROCESSING_STATUS"]["message"] = "Error during analysis"
             print(f"Error: {error_msg}")
 
-    finally:
-        st.session_state.PROCESSING_STATUS["is_running"] = False
-
-
-def run_analysis(analysis_container) -> None:
-    try:
-        if "PROCESSING_STATUS" not in st.session_state:
-            st.session_state.PROCESSING_STATUS = {
-                "current_agent": None,
-                "current_task": None,
-                "start_time": None,
-                "progress": 0.0,
-                "message": "Ready to start analysis",
-                "error": None,
-                "completed_tasks": set(),
-                "total_tasks": 5,
-                "is_running": False,
-                "cancelling": False,
-            }
-
-        setup_file_watcher()
-        check_file_updates()
-
-        button_cols = analysis_container.columns([1, 2, 1])
-        with button_cols[0]:
-            if st.button(
-                "🔄 Fetch Updates",
-                key="fetch_updates_button",
-                help="Manually check for file updates",
-            ):
-                files_found = check_file_updates()
-                st.success(f"Found {files_found}/4 output files")
-                if files_found < 4:
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.session_state.PROCESSING_STATUS["is_running"] = False
-                    st.session_state.PROCESSING_STATUS["progress"] = 1.0
-                    st.session_state.PROCESSING_STATUS["message"] = "Analysis complete"
-
-        progress_placeholder = analysis_container.empty()
-        status_placeholder = analysis_container.empty()
-        files_container = analysis_container.container()
-
-        if (
-            not st.session_state.ANALYSIS_THREAD_STARTED
-            and not st.session_state.PROCESSING_STATUS["is_running"]
-        ):
-            analysis_thread = threading.Thread(
-                target=run_analysis_thread, args=(analysis_container,)
-            )
-            analysis_thread.daemon = True
-            analysis_thread.start()
-
-        files_to_check = {
-            "strategy_info": "outputs/strategy_info.json",
-            "strategy_report": "outputs/output.md",
-            "companies": "outputs/companies.json",
-            "valuation_report": "outputs/valuation.md",
-        }
-
-        progress = st.session_state.PROCESSING_STATUS["progress"]
-        progress_placeholder.progress(progress, text=f"Progress: {int(progress*100)}%")
-
-        status_message = st.session_state.PROCESSING_STATUS["message"]
-        current_agent = st.session_state.PROCESSING_STATUS["current_agent"] or "None"
-        current_task = (
-            st.session_state.PROCESSING_STATUS["current_task"] or "Waiting to start"
-        )
-
-        status_placeholder.info(
-            f"Status: {status_message} | Agent: {current_agent} | Task: {current_task}"
-        )
-
-        if st.session_state.PROCESSING_STATUS["error"]:
-            error_msg = st.session_state.PROCESSING_STATUS["error"]
-            status_placeholder.error(f"Error: {error_msg}")
-
-            if status_placeholder.button("Retry Analysis"):
-                st.session_state.PROCESSING_STATUS["error"] = None
-                st.session_state.PROCESSING_STATUS["is_running"] = False
-                st.session_state.ANALYSIS_THREAD_STARTED = False
-                st.rerun()
-
-        if st.session_state.PROCESSING_STATUS["is_running"]:
-            if status_placeholder.button("Cancel Analysis"):
-                st.session_state.PROCESSING_STATUS["cancelling"] = True
-                status_placeholder.warning("Cancelling analysis... Please wait.")
-
-        files_displayed = set()
-
-        for file_key, file_path in files_to_check.items():
-            if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                is_new = False
-                if st.session_state.FILE_UPDATES[file_key] is not None:
-                    last_update = st.session_state.FILE_UPDATES[file_key]
-                    is_new = (datetime.now() - last_update).total_seconds() < 5
-
-                expanded = st.session_state.EXPANDER_STATES[file_key] or is_new
-                display_file(files_container, file_key, file_path, expanded)
-                files_displayed.add(file_key)
-
-        if (
-            len(files_displayed) == 4
-            and not st.session_state.PROCESSING_STATUS["is_running"]
-        ):
-            status_placeholder.success("✅ Analysis process completed successfully!")
-            st.balloons()
-        elif (
-            not st.session_state.PROCESSING_STATUS["is_running"]
-            and len(files_displayed) > 0
-        ):
-            missing_files = set(files_to_check.keys()) - files_displayed
-            status_placeholder.warning(
-                f"⚠️ Analysis complete but some files were not generated. Found {len(files_displayed)}/4 files. Missing: {', '.join(missing_files)}"
-            )
-
-        if st.session_state.PROCESSING_STATUS["is_running"]:
-            time.sleep(1)
-            st.rerun()
-
     except Exception as e:
-        analysis_container.error(f"Error during analysis: {str(e)}")
-        print(f"Error: {str(e)}")
+        print(f"Failed to run analysis: {str(e)}")
+    finally:
+        if "PROCESSING_STATUS" in st.session_state:
+            st.session_state["PROCESSING_STATUS"]["is_running"] = False
 
 
-def display_file(container, file_key, file_path, expanded=False):
-    if file_key == "strategy_info":
-        with container.expander("Strategy Information", expanded=expanded):
-            try:
-                with open(file_path, "r") as f:
-                    strategy_data = json.load(f)
-                    container.json(strategy_data)
-            except Exception as e:
-                container.error(f"Error reading strategy info: {str(e)}")
+def read_file_content(file_path):
+    """Read and return the content of a file"""
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+        return None
 
-    elif file_key == "strategy_report":
-        with container.expander("Strategy Report", expanded=expanded):
-            try:
-                with open(file_path, "r") as f:
-                    container.markdown(f.read())
-            except Exception as e:
-                container.error(f"Error reading strategy report: {str(e)}")
+    try:
+        with open(file_path, "r") as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading file {file_path}: {str(e)}")
+        return None
 
-    elif file_key == "companies":
-        with container.expander("Researched Companies", expanded=expanded):
-            try:
-                with open(file_path, "r") as f:
-                    companies_data = json.load(f)
-                    container.json(companies_data)
-            except Exception as e:
-                container.error(f"Error reading companies data: {str(e)}")
 
-    elif file_key == "valuation_report":
-        with container.expander("Valuation Report", expanded=expanded):
-            try:
-                with open(file_path, "r") as f:
-                    container.markdown(f.read())
-            except Exception as e:
-                container.error(f"Error reading valuation report: {str(e)}")
-
-    if expanded and st.session_state.EXPANDER_STATES[file_key]:
-        st.session_state.EXPANDER_STATES[file_key] = False
+def get_fmp_data_files():
+    """Get all markdown files from the FMP data directory"""
+    result = []
+    if os.path.exists(FMP_DATA_DIR):
+        for file in os.listdir(FMP_DATA_DIR):
+            if file.endswith("_valuation.md") or file.endswith("_metrics.md"):
+                result.append(os.path.join(FMP_DATA_DIR, file))
+    return sorted(result)
 
 
 def initialize_gemini():
+    """Initialize the Gemini model"""
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
     model = genai.GenerativeModel(
@@ -858,16 +703,76 @@ def initialize_gemini():
     return model
 
 
+def display_strategy_tab():
+    """Display the Strategy tab content"""
+    strategy_content = read_file_content(STRATEGY_REPORT_PATH)
+    if strategy_content:
+        st.info(strategy_content)
+    else:
+        st.info(
+            "Strategy report not available yet. Please wait for the analysis to complete."
+        )
+
+
+def display_companies_tab():
+    """Display the Companies tab content"""
+    companies_content = read_file_content(COMPANIES_PATH)
+    if companies_content:
+        try:
+
+            companies_data = json.loads(companies_content)
+            st.code(json.dumps(companies_data, indent=2), language="json")
+        except:
+
+            st.code(companies_content)
+    else:
+        st.info(
+            "Companies data not available yet. Please wait for the analysis to complete."
+        )
+
+
+def display_financials_tab():
+    """Display the Financials tab content"""
+    fmp_files = get_fmp_data_files()
+    if fmp_files:
+        for file_path in fmp_files:
+            filename = os.path.basename(file_path)
+            company_symbol = filename.split("_")[0]
+            content = read_file_content(file_path)
+
+            if content:
+                with st.expander(f"{company_symbol} - {filename}", expanded=True):
+                    st.info(content)
+    else:
+        st.info(
+            "Financial data not available yet. Please wait for the analysis to complete."
+        )
+
+
+def display_valuation_tab():
+    """Display the Valuation tab content"""
+    valuation_content = read_file_content(VALUATION_REPORT_PATH)
+    if valuation_content:
+        st.info(valuation_content)
+    else:
+        st.info(
+            "Valuation report not available yet. Please wait for the analysis to complete."
+        )
+
+
 def main():
     st.set_page_config(
-        page_title="M&A Automation",
+        page_title="M&A Strategy Automation",
         page_icon="💼",
         layout="wide",
         initial_sidebar_state="collapsed",
     )
 
+    if st.session_state.get("analysis_started", False):
+        st_autorefresh(interval=3000, limit=1000, key="auto-refresh")
+
     if "PROCESSING_STATUS" not in st.session_state:
-        st.session_state.PROCESSING_STATUS = {
+        st.session_state["PROCESSING_STATUS"] = {
             "current_agent": None,
             "current_task": None,
             "start_time": None,
@@ -875,57 +780,52 @@ def main():
             "message": "Ready to start analysis",
             "error": None,
             "completed_tasks": set(),
-            "total_tasks": 5,
+            "total_tasks": 4,
             "is_running": False,
-            "cancelling": False,
         }
 
     if "FILE_UPDATES" not in st.session_state:
-        st.session_state.FILE_UPDATES = {
+        st.session_state["FILE_UPDATES"] = {
             "strategy_info": None,
             "strategy_report": None,
             "companies": None,
             "valuation_report": None,
-        }
-
-    if "EXPANDER_STATES" not in st.session_state:
-        st.session_state.EXPANDER_STATES = {
-            "strategy_info": False,
-            "strategy_report": False,
-            "companies": False,
-            "valuation_report": False,
+            "fmp_data": {},
         }
 
     if "STARTUP" not in st.session_state:
-        st.session_state.STARTUP = True
+        st.session_state["STARTUP"] = True
 
     if "OBSERVER" not in st.session_state:
-        st.session_state.OBSERVER = None
+        st.session_state["OBSERVER"] = None
 
     if "ANALYSIS_THREAD_STARTED" not in st.session_state:
-        st.session_state.ANALYSIS_THREAD_STARTED = False
+        st.session_state["ANALYSIS_THREAD_STARTED"] = False
 
     if "conversation_ended" not in st.session_state:
-        st.session_state.conversation_ended = False
+        st.session_state["conversation_ended"] = False
 
     if "analysis_started" not in st.session_state:
-        st.session_state.analysis_started = False
+        st.session_state["analysis_started"] = False
+
+    if "LAST_UPDATE_CHECK" not in st.session_state:
+        st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
 
     st.markdown(
         """
         <style>
-        .css-18e3th9 .block-container {
-            padding-top: 0rem;
-        }
+        .css-18e3th9 .block-container {padding-top: 0rem;}
+        .stProgress .st-bo {background-color: #808080;}
+        .main-header {text-align: center; margin-bottom: 20px;}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    if st.session_state.STARTUP:
+    if st.session_state["STARTUP"]:
         cleanup_outputs_directory()
         setup_file_watcher()
-        st.session_state.STARTUP = False
+        st.session_state["STARTUP"] = False
 
     col1, col2, col3 = st.columns([0.25, 0.2, 0.25])
     with col2:
@@ -933,100 +833,93 @@ def main():
 
     if "bot" not in st.session_state:
         model = initialize_gemini()
-        st.session_state.bot = MAStrategyBot(model=model)
+        st.session_state["bot"] = MAStrategyBot(model=model)
 
-    bot = st.session_state.bot
+    bot = st.session_state["bot"]
 
-    chat_container = st.container()
-    with chat_container:
-        for message in bot.conversation_history:
-            if message.role == "bot":
-                st.chat_message("assistant").write(message.text)
-            else:
-                st.chat_message("user").write(message.text)
+    progress_placeholder = st.empty()
+    status_placeholder = st.empty()
 
-    if not st.session_state.conversation_ended:
-        if not bot.conversation_history:
-            initial_message, _ = bot.get_response()
-            bot.conversation_history.append(Message(role="bot", text=initial_message))
-            st.rerun()
+    progress = st.session_state["PROCESSING_STATUS"]["progress"]
+    task = st.session_state["PROCESSING_STATUS"]["current_task"] or "Waiting to start"
+    message = st.session_state["PROCESSING_STATUS"]["message"]
 
-        user_input = st.chat_input("Type your message here...")
-        if user_input:
-            bot.conversation_history.append(Message(role="user", text=user_input))
-            with st.spinner("Thinking..."):
-                bot_response, is_complete = bot.get_response(user_input)
-            bot.conversation_history.append(Message(role="bot", text=bot_response))
+    progress_bar = progress_placeholder.progress(progress)
+    status_placeholder.info(f"Status: {message} | Current Task: {task}")
 
-            if is_complete or bot.current_stage in [Stage.COMPLETION, Stage.COMPLETE]:
-                st.session_state.conversation_ended = True
-                filename = bot.save_strategy_info()
-                st.success(f"Strategy information has been saved to: {filename}")
+    if progress > 0:
+        progress_bar.progress(progress, text=f"Progress: {int(progress*100)}%")
 
-                if st.button(
-                    "▶️ Generate Strategy",
-                    key="generate_button",
-                    type="primary",
-                ):
-                    st.session_state.analysis_started = True
-                    st.rerun()
-            else:
+    if st.session_state["PROCESSING_STATUS"]["error"]:
+        error_msg = st.session_state["PROCESSING_STATUS"]["error"]
+        st.error(f"Error: {error_msg}")
+
+    if not st.session_state["conversation_ended"]:
+        chat_container = st.container()
+        with chat_container:
+            for message in bot.conversation_history:
+                if message.role == "bot":
+                    st.chat_message("assistant").write(message.text)
+                else:
+                    st.chat_message("user").write(message.text)
+
+            if not bot.conversation_history:
+                initial_message, _ = bot.get_response()
+                bot.conversation_history.append(
+                    Message(role="bot", text=initial_message)
+                )
                 st.rerun()
-    elif not st.session_state.analysis_started:
+
+            user_input = st.chat_input("Type your message here...")
+            if user_input:
+                bot.conversation_history.append(Message(role="user", text=user_input))
+                with st.spinner("Thinking..."):
+                    bot_response, is_complete = bot.get_response(user_input)
+                bot.conversation_history.append(Message(role="bot", text=bot_response))
+
+                if is_complete or bot.current_stage in [
+                    Stage.COMPLETION,
+                    Stage.COMPLETE,
+                ]:
+                    st.session_state["conversation_ended"] = True
+                    filename = bot.save_strategy_info()
+                    st.success(f"Strategy information has been saved to: {filename}")
+                st.rerun()
+
+    elif not st.session_state["analysis_started"]:
         st.subheader("Collected Strategy Information")
         st.json(vars(bot.collected_info))
 
         if st.button("▶️ Generate Strategy", key="generate_button", type="primary"):
-            st.session_state.analysis_started = True
+            st.session_state["analysis_started"] = True
+            analysis_thread = threading.Thread(target=run_analysis_thread)
+            analysis_thread.daemon = True
+            analysis_thread.start()
             st.rerun()
     else:
-        tab1, tab2 = st.tabs(["Analysis Progress", "Summary"])
+        if not st.session_state["ANALYSIS_THREAD_STARTED"]:
+            analysis_thread = threading.Thread(target=run_analysis_thread)
+            analysis_thread.daemon = True
+            analysis_thread.start()
+            st.session_state["ANALYSIS_THREAD_STARTED"] = True
+
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["Strategy", "Companies", "Financials", "Valuation"]
+        )
 
         with tab1:
-            analysis_container = st.container()
-            with analysis_container:
-                run_analysis(analysis_container)
+            display_strategy_tab()
 
         with tab2:
-            refresh_col1, refresh_col2, refresh_col3 = st.columns([0.25, 0.5, 0.25])
-            with refresh_col1:
-                if st.button("🔄 Refresh Data", key="refresh_summary_button"):
-                    check_file_updates()
-                    st.rerun()
+            display_companies_tab()
 
-            st.subheader("User Input")
-            st.json(vars(bot.collected_info))
+        with tab3:
+            display_financials_tab()
 
-            st.subheader("Output Status")
-            files_to_check = {
-                "Strategy Info": "outputs/strategy_info.json",
-                "Strategy Report": "outputs/output.md",
-                "Companies List": "outputs/companies.json",
-                "Valuation Report": "outputs/valuation.md",
-            }
+        with tab4:
+            display_valuation_tab()
 
-            file_status = {}
-            for name, path in files_to_check.items():
-                if os.path.exists(path) and os.path.getsize(path) > 0:
-                    file_status[name] = "✅ Available"
-                else:
-                    file_status[name] = "❌ Not available"
-
-            st.table(file_status)
-
-    with st.sidebar:
-        col1, col2, col3 = st.columns([0.25, 1, 0.25])
-        with col2:
-            st.markdown("# 🛠️ Cleanup")
-
-        col1, col2, col3 = st.columns([0.25, 0.4, 0.25])
-        with col2:
-            if st.button("Execute", type="primary"):
-                cleanup_outputs_directory()
-                st.session_state.conversation_ended = False
-                st.session_state.analysis_started = False
-                st.session_state.STARTUP = True
-                st.rerun()
+        check_file_updates()
 
 
 if __name__ == "__main__":
