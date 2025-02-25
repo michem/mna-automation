@@ -32,14 +32,14 @@ researcher = CodeAgent(
     tools=[get_companies, read_from_markdown, get_options, save_to_json],
     additional_authorized_imports=["json", "os"],
     model=model_r,
-    max_steps=15,
+    max_steps=50,
     description="A flexible and persistent researcher agent that finds companies matching the target profile from the strategy report. It tries multiple search parameters when needed, adapts to available options, and always ensures viable companies are identified and saved, even with imperfect strategy data.",
 )
 critic = ToolCallingAgent(
     name="critic",
     tools=[get_names_and_summaries, read_from_json, save_to_json, read_from_markdown],
     model=model_c,
-    max_steps=10,
+    max_steps=50,
     description="A diligent critic agent that analyzes company profiles against strategy requirements, ranks matches systematically, and ensures at least some viable options are identified and saved. It handles incomplete data gracefully and provides clear reasoning for company selection.",
 )
 

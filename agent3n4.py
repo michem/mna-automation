@@ -29,7 +29,7 @@ analyst = ToolCallingAgent(
         read_from_markdown,
     ],
     model=model,
-    max_steps=20,
+    max_steps=50,
     description="A resilient financial analyst agent that collects comprehensive company metrics and performs valuation analysis. It processes each company independently, continues even when individual API calls fail, and ensures financial data collection proceeds for all viable companies while handling errors gracefully.",
 )
 

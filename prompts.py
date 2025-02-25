@@ -140,76 +140,31 @@ ANALYST_PROMPT = f"""You are a highly skilled M&A Financial Analyst responsible 
 
 You will first read the strategy report at {STRATEGY_REPORT_PATH} to understand the acquisition criteria, and then read the companies list at {COMPANIES_JSON_PATH}.
 
-IMPORTANT GUIDELINES:
-1. HANDLE ERRORS GRACEFULLY: If analysis fails for any company, continue with others.
-2. ALWAYS PRODUCE OUTPUT: Even with incomplete data, generate analysis for available companies.
-3. BE ADAPTABLE: If a particular metric isn't available, use alternative metrics or approximations.
-
 For each target company, you will:
    * Collect financial metrics using collect_financial_metrics(symbol)
    * Get company profile using get_company_profile(symbol)
    * Perform valuation analysis using perform_valuation_analysis(symbol)
    
-ROBUST PROCEDURE:
-1. Process companies sequentially to ensure at least some data is collected
-2. Implement error handling for each API call
-3. If a company completely fails analysis, document the failure and continue with others
-4. Ensure at least ONE company has complete analysis
-5. Provide progress updates throughout the process
-
-ERROR HANDLING:
-1. If a specific API call fails, retry once after a brief pause
-2. If retry fails, proceed to the next company
-3. If all companies fail for a specific function, try with a subset of metrics
-4. Always ensure some output is generated
-
 Important: If analysis fails for any company, do not stop the process, instead, continue with the next company as some data may not be available for a few companies.
    
-Note that the tools collect_financial_metrics, get_company_profile, and perform_valuation_analysis internally save the data to the outputs/fmp_data directory, so you do not need to save them manually.
+Note that the tools collect_financial_metrics, get_company_profile, and perform_valuation_analysis internally save the data to the outputs directory, so you do not need to save them manually.
 """
 
 VALUATION_PROMPT = f"""You are an expert analyst tasked with generating a comprehensive valuation report for potential acquisition targets.
 
 You will read the strategy report at {STRATEGY_REPORT_PATH} to understand the acquisition criteria, and then read the companies list at {COMPANIES_JSON_PATH}.
 
-IMPORTANT GUIDELINES:
-1. HANDLE ERRORS GRACEFULLY: If data for some companies is missing, work with what's available.
-2. ALWAYS PRODUCE OUTPUT: Generate a valuation report even with limited information.
-3. BE TRANSPARENT: Clearly indicate limitations and assumptions in your analysis.
-
 For each target company, you will:
    - Read their valuation file (*_valuation.md in outputs/fmp_data/, where * is the company symbol)
-   - Read their metrics file (*_metrics.md in outputs/fmp_data/, where * is the company symbol)
    - Analyze data in context of strategy requirements
-   - Generate a very comprehensive valuation report
-
-ROBUST PROCEDURE:
-1. Check for the existence of each expected file in outputs/fmp_data/ directory
-2. For each available file, extract as much data as possible
-3. If files are corrupted or incomplete, still include the company with limited analysis
-4. Analyze at least one company completely if possible
-5. Perform comparative analysis with available data
-6. Always generate a final recommendation, even with limited information
-
-YOUR VALUATION REPORT MUST INCLUDE:
-1. Executive Summary with key findings and recommendations
-2. Individual Company Analysis sections for each available company:
-   - Financial overview
-   - Key valuation metrics
-   - Strengths and weaknesses
-   - Strategic fit assessment
-3. Comparative Analysis section
-4. Final Recommendations with clear rankings
-5. Risk Assessment section
-6. Next Steps and Implementation Considerations
-
-Save the final report to {VALUATION_REPORT_PATH} using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{VALUATION_REPORT_PATH}'.
-
-ERROR HANDLING:
-1. If strategy report is unavailable, use general M&A best practices
-2. If companies list is unavailable, search for valuation files directly in the directory
-3. If valuation files are corrupted, extract partial information and note limitations
-4. Always ensure the final report is generated, even with limited data
+   - Generate a very comprehensive valuation report that includes:
+       - Analysis of each company's financials and valuation
+       - Comparative analysis across companies
+       - Strategic fit assessment
+       - Final recommendations with rankings based on valuation and strategic fit
+       - Save the final report to {VALUATION_REPORT_PATH} using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{VALUATION_REPORT_PATH}'.
+       
+Important: If any valuation report is missing, incomplete, or incorrect, proceed with whatever data is available and skip the problematic reports.
 
 The final report should help decision makers understand:
 - How each company performs financially

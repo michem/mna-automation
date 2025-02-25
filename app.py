@@ -104,48 +104,47 @@ class ImprovedFileChangeHandler(FileSystemEventHandler):
 
         if file_path.endswith("strategy_info.json"):
             st.session_state["FILE_UPDATES"]["strategy_info"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = max(
-                0.25, st.session_state["PROCESSING_STATUS"]["progress"]
-            )
-            st.session_state["PROCESSING_STATUS"][
-                "message"
-            ] = "Strategy information collected"
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.0
+            st.session_state["PROCESSING_STATUS"]["message"] = "Starting analysis"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
-            ] = "Researching companies"
-            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("strategy")
+            ] = "Generating strategy report"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("input")
 
         elif file_path.endswith("output.md"):
             st.session_state["FILE_UPDATES"]["strategy_report"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = max(
-                0.5, st.session_state["PROCESSING_STATUS"]["progress"]
-            )
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.25
             st.session_state["PROCESSING_STATUS"][
                 "message"
             ] = "Strategy report generated"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
-            ] = "Analyzing financials"
-            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("report")
+            ] = "Researching companies"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("strategy")
 
         elif file_path.endswith("companies.json"):
             st.session_state["FILE_UPDATES"]["companies"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = max(
-                0.75, st.session_state["PROCESSING_STATUS"]["progress"]
-            )
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.5
             st.session_state["PROCESSING_STATUS"]["message"] = "Companies identified"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
-            ] = "Performing valuation"
+            ] = "Analyzing financials"
             st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("companies")
 
         elif file_path.endswith("valuation.md"):
             st.session_state["FILE_UPDATES"]["valuation_report"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = 1.0
-            st.session_state["PROCESSING_STATUS"]["message"] = "Valuation complete"
-            st.session_state["PROCESSING_STATUS"]["current_task"] = "Analysis complete"
-            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("valuation")
-            st.session_state["PROCESSING_STATUS"]["is_running"] = False
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.75
+            st.session_state["PROCESSING_STATUS"]["message"] = "Financials analyzed"
+            st.session_state["PROCESSING_STATUS"][
+                "current_task"
+            ] = "Completing valuation"
+            st.session_state["PROCESSING_STATUS"]["completed_tasks"].add("financials")
+
+            if len(st.session_state["PROCESSING_STATUS"]["completed_tasks"]) == 4:
+                st.session_state["PROCESSING_STATUS"]["progress"] = 1.0
+                st.session_state["PROCESSING_STATUS"]["message"] = "Analysis complete"
+                st.session_state["PROCESSING_STATUS"]["current_task"] = "Complete"
+                st.session_state["PROCESSING_STATUS"]["is_running"] = False
 
         elif file_path.startswith(FMP_DATA_DIR) and (
             file_path.endswith("_metrics.md") or file_path.endswith("_valuation.md")
@@ -253,36 +252,38 @@ def check_file_updates():
     files_to_check = {
         "strategy_info": (
             STRATEGY_INFO_PATH,
-            0.25,
-            "Strategy information collected",
-            "Researching companies",
-            "strategy",
+            0.0,
+            "Starting analysis",
+            "Generating strategy report",
+            "input",
         ),
         "strategy_report": (
             STRATEGY_REPORT_PATH,
-            0.5,
+            0.25,
             "Strategy report generated",
-            "Analyzing financials",
-            "report",
+            "Researching companies",
+            "strategy",
         ),
         "companies": (
             COMPANIES_PATH,
-            0.75,
+            0.5,
             "Companies identified",
-            "Performing valuation",
+            "Analyzing financials",
             "companies",
         ),
         "valuation_report": (
             VALUATION_REPORT_PATH,
-            1.0,
-            "Valuation complete",
-            "Analysis complete",
-            "valuation",
+            0.75,
+            "Financials analyzed",
+            "Completing valuation",
+            "financials",
         ),
     }
 
     files_found = 0
-    latest_progress = 0.0
+
+    highest_completed_stage = -1
+    stage_order = ["input", "strategy", "companies", "financials", "valuation"]
 
     fmp_files_found = False
     if os.path.exists(FMP_DATA_DIR):
@@ -306,26 +307,46 @@ def check_file_updates():
     ) in files_to_check.items():
         if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
             files_found += 1
-            latest_progress = max(latest_progress, progress)
             st.session_state["FILE_UPDATES"][file_key] = datetime.now()
 
-            if progress > st.session_state["PROCESSING_STATUS"]["progress"]:
+            if task_id in stage_order:
+                stage_index = stage_order.index(task_id)
+                highest_completed_stage = max(highest_completed_stage, stage_index)
+
+    current_stage_index = highest_completed_stage
+    if current_stage_index >= 0 and current_stage_index < len(stage_order):
+        current_stage = stage_order[current_stage_index]
+
+        for file_key, (
+            file_path,
+            progress,
+            message,
+            task,
+            task_id,
+        ) in files_to_check.items():
+            if task_id == current_stage:
                 st.session_state["PROCESSING_STATUS"]["progress"] = progress
                 st.session_state["PROCESSING_STATUS"]["message"] = message
                 st.session_state["PROCESSING_STATUS"]["current_task"] = task
                 st.session_state["PROCESSING_STATUS"]["completed_tasks"].add(task_id)
+                break
 
-    if files_found == 4 and st.session_state["PROCESSING_STATUS"]["is_running"]:
-        st.session_state["PROCESSING_STATUS"].update(
-            {
-                "is_running": False,
-                "message": "Analysis complete",
-                "progress": 1.0,
-                "current_task": "Complete",
-            }
-        )
-        st.session_state["ANALYSIS_THREAD_STARTED"] = True
-        st.rerun()
+    if files_found == 4:
+        valuation_updated = st.session_state["FILE_UPDATES"].get("valuation_report")
+        if (
+            valuation_updated
+            and (datetime.now() - valuation_updated).total_seconds() > 5
+        ):
+            st.session_state["PROCESSING_STATUS"].update(
+                {
+                    "is_running": False,
+                    "message": "Analysis complete",
+                    "progress": 1.0,
+                    "current_task": "Complete",
+                }
+            )
+            st.session_state["ANALYSIS_THREAD_STARTED"] = True
+            st.rerun()
 
     return files_found
 
@@ -564,7 +585,6 @@ If you have trouble parsing the user's message, try to extract relevant informat
 def run_analysis_thread():
     """Run the analysis process in a separate thread"""
     try:
-
         if "PROCESSING_STATUS" not in st.session_state:
             st.session_state["PROCESSING_STATUS"] = {
                 "current_agent": None,
@@ -587,6 +607,7 @@ def run_analysis_thread():
             "current_task"
         ] = "Generating strategy report"
         st.session_state["PROCESSING_STATUS"]["message"] = "Starting analysis..."
+        st.session_state["PROCESSING_STATUS"]["progress"] = 0.0
 
         try:
             result = manager.run(MANAGER_PROMPT, stream=True)
@@ -597,6 +618,7 @@ def run_analysis_thread():
 
                     if "MNA_PROCESS_COMPLETE" in str(step.action_output):
                         print("MNA process completion signal detected!")
+                        time.sleep(2)
                         st.session_state["PROCESSING_STATUS"].update(
                             {
                                 "is_running": False,
@@ -613,40 +635,36 @@ def run_analysis_thread():
                         "current_agent"
                     ] = step.agent_name
 
-                    if step.agent_name == "strategist":
-                        st.session_state["PROCESSING_STATUS"][
-                            "current_task"
-                        ] = "Generating strategy report"
-                    elif step.agent_name == "researcher":
-                        st.session_state["PROCESSING_STATUS"][
-                            "current_task"
-                        ] = "Researching companies"
-                    elif step.agent_name == "analyst":
-                        st.session_state["PROCESSING_STATUS"][
-                            "current_task"
-                        ] = "Analyzing financials"
-                    elif step.agent_name == "valuator":
-                        st.session_state["PROCESSING_STATUS"][
-                            "current_task"
-                        ] = "Generating valuation report"
-
-                    progress_updates = {
-                        "strategist": (0.25, "Generating strategy report"),
-                        "researcher": (0.5, "Researching companies"),
-                        "analyst": (0.75, "Analyzing financials"),
-                        "valuator": (1.0, "Generating valuation report"),
+                    agent_tasks = {
+                        "strategist": ("Generating strategy report", 0.0),
+                        "researcher": ("Researching companies", 0.25),
+                        "analyst": ("Analyzing financials", 0.5),
+                        "valuator": ("Performing valuation", 0.75),
                     }
 
-                    if step.agent_name in progress_updates:
-                        progress, task = progress_updates[step.agent_name]
-                        st.session_state["PROCESSING_STATUS"].update(
-                            {
-                                "progress": progress,
-                                "current_task": task,
-                                "message": f"Working on {task.lower()}",
-                            }
+                    if step.agent_name in agent_tasks:
+                        task, progress = agent_tasks[step.agent_name]
+
+                        completed_files = sum(
+                            1
+                            for f in [
+                                STRATEGY_INFO_PATH,
+                                STRATEGY_REPORT_PATH,
+                                COMPANIES_PATH,
+                                VALUATION_REPORT_PATH,
+                            ]
+                            if os.path.exists(f) and os.path.getsize(f) > 0
                         )
-                        st.rerun()
+
+                        if completed_files <= len(agent_tasks):
+                            st.session_state["PROCESSING_STATUS"].update(
+                                {
+                                    "progress": progress,
+                                    "current_task": task,
+                                    "message": f"Working on {task.lower()}",
+                                }
+                            )
+                            st.rerun()
 
             check_file_updates()
 
@@ -769,7 +787,7 @@ def main():
     )
 
     if st.session_state.get("analysis_started", False):
-        st_autorefresh(interval=3000, limit=1000, key="auto-refresh")
+        st_autorefresh(interval=15000, limit=100, key="auto-refresh")
 
     if "PROCESSING_STATUS" not in st.session_state:
         st.session_state["PROCESSING_STATUS"] = {
@@ -845,7 +863,7 @@ def main():
     message = st.session_state["PROCESSING_STATUS"]["message"]
 
     progress_bar = progress_placeholder.progress(progress)
-    status_placeholder.info(f"Status: {message} | Current Task: {task}")
+    status_placeholder.warning(f"Status: {message} | Current Task: {task}")
 
     if progress > 0:
         progress_bar.progress(progress, text=f"Progress: {int(progress*100)}%")
@@ -890,7 +908,7 @@ def main():
         st.subheader("Collected Strategy Information")
         st.json(vars(bot.collected_info))
 
-        if st.button("▶️ Generate Strategy", key="generate_button", type="primary"):
+        if st.button("▶️ Generate strategy", key="generate_button", type="primary"):
             st.session_state["analysis_started"] = True
             analysis_thread = threading.Thread(target=run_analysis_thread)
             analysis_thread.daemon = True
