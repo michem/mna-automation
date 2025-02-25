@@ -30,7 +30,7 @@ analyst = ToolCallingAgent(
     ],
     model=model,
     max_steps=20,
-    description="A financial analyst agent that assesses company symbols and calls various tools to collect financial and valuation data.",
+    description="A resilient financial analyst agent that collects comprehensive company metrics and performs valuation analysis. It processes each company independently, continues even when individual API calls fail, and ensures financial data collection proceeds for all viable companies while handling errors gracefully.",
 )
 
 if __name__ == "__main__":

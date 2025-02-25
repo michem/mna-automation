@@ -19,7 +19,7 @@ strategist = CodeAgent(
     additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=10,
-    description="A strategist agent that generates a comprehensive M&A strategy report based on the client's requirements and market analysis.,",
+    description="A strategist agent that generates a comprehensive M&A strategy report based on the client's requirements and market analysis. It handles incomplete data gracefully, always produces meaningful output, and ensures the strategy report is both insightful and actionable even with limited information.",
 )
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ Call each agent in the order listed above.
 
 Your task is to ensure that the agents work together effectively, leveraging their expertise to achieve the best possible outcome for the M&A process. You will need to manage the workflow, facilitate communication between agents, and ensure that all aspects of the M&A process are covered.
 
-Exit once each of the agent has completed their task and provided their final output.
+Exit once each of the agent has completed their task and end the conversation with 'MNA_PROCESS_COMPLETE'.
 """
 
 model = LiteLLMModel(
