@@ -104,7 +104,7 @@ class ImprovedFileChangeHandler(FileSystemEventHandler):
 
         if file_path.endswith("strategy_info.json"):
             st.session_state["FILE_UPDATES"]["strategy_info"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = 0.0
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.25
             st.session_state["PROCESSING_STATUS"]["message"] = "Starting analysis"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
@@ -113,7 +113,7 @@ class ImprovedFileChangeHandler(FileSystemEventHandler):
 
         elif file_path.endswith("output.md"):
             st.session_state["FILE_UPDATES"]["strategy_report"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = 0.25
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.5
             st.session_state["PROCESSING_STATUS"][
                 "message"
             ] = "Strategy report generated"
@@ -124,7 +124,7 @@ class ImprovedFileChangeHandler(FileSystemEventHandler):
 
         elif file_path.endswith("companies.json"):
             st.session_state["FILE_UPDATES"]["companies"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = 0.5
+            st.session_state["PROCESSING_STATUS"]["progress"] = 0.75
             st.session_state["PROCESSING_STATUS"]["message"] = "Companies identified"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
@@ -133,7 +133,7 @@ class ImprovedFileChangeHandler(FileSystemEventHandler):
 
         elif file_path.endswith("valuation.md"):
             st.session_state["FILE_UPDATES"]["valuation_report"] = datetime.now()
-            st.session_state["PROCESSING_STATUS"]["progress"] = 0.75
+            st.session_state["PROCESSING_STATUS"]["progress"] = 1.0
             st.session_state["PROCESSING_STATUS"]["message"] = "Financials analyzed"
             st.session_state["PROCESSING_STATUS"][
                 "current_task"
