@@ -643,7 +643,9 @@ def run_analysis_thread(analysis_container):
                         files_found = check_file_updates()
                         print(f"Found {files_found}/4 output files")
                         st.session_state.ANALYSIS_THREAD_STARTED = True
-                        break
+
+                        if files_found == 4:
+                            st.stop()
 
                 if hasattr(step, "agent_name") and step.agent_name:
                     st.session_state.PROCESSING_STATUS["current_agent"] = (
@@ -807,7 +809,7 @@ def display_file(container, file_key, file_path, expanded=False):
             try:
                 with open(file_path, "r") as f:
                     strategy_data = json.load(f)
-                    container.code(json.dumps(strategy_data, indent=2), language="json")
+                    container.json(strategy_data)
             except Exception as e:
                 container.error(f"Error reading strategy info: {str(e)}")
 
@@ -824,9 +826,7 @@ def display_file(container, file_key, file_path, expanded=False):
             try:
                 with open(file_path, "r") as f:
                     companies_data = json.load(f)
-                    container.code(
-                        json.dumps(companies_data, indent=2), language="json"
-                    )
+                    container.json(companies_data)
             except Exception as e:
                 container.error(f"Error reading companies data: {str(e)}")
 
@@ -963,7 +963,6 @@ def main():
                 filename = bot.save_strategy_info()
                 st.success(f"Strategy information has been saved to: {filename}")
 
-                st.markdown("What's Next?")
                 if st.button(
                     "▶️ Generate Strategy",
                     key="generate_button",
@@ -977,7 +976,6 @@ def main():
         st.subheader("Collected Strategy Information")
         st.json(vars(bot.collected_info))
 
-        st.markdown("### What's Next?")
         if st.button("▶️ Generate Strategy", key="generate_button", type="primary"):
             st.session_state.analysis_started = True
             st.rerun()
