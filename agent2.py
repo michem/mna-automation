@@ -25,11 +25,17 @@ model_r = LiteLLMModel(
 model_c = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.0,
 )
 researcher = CodeAgent(
     name="researcher",
-    tools=[get_companies, read_from_markdown, get_options, save_to_json],
+    tools=[
+        get_companies,
+        read_from_json,
+        read_from_markdown,
+        get_options,
+        save_to_json,
+    ],
     additional_authorized_imports=["json", "os"],
     model=model_r,
     max_steps=50,
