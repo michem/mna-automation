@@ -67,7 +67,7 @@ Then, you will generate queries to find companies that match the target profile 
 - 'market_cap': Select from 'Large Cap', 'Mid Cap', 'Small Cap', etc.
 - 'path': ALWAYS set this to '{COMPANIES_JSON_PATH}'
 
-First use the 'get_options' tool to see the available options for each parameter. The 'get_options' function requires a single parameter string argument (e.g., 'currency', 'sector', 'industry_group', 'industry', 'country', or 'market_cap').
+First use the 'get_options' tool to see the available options for each parameter. The 'get_options' function requires a single parameter string argument (e.g., 'currency', 'sector', 'industry_group', 'industry', 'country', or 'market_cap'). Verify the companies data is saved to {COMPANIES_JSON_PATH} using the 'read_from_json' tool.
 
 ROBUST SEARCH PROCEDURE:
 1. Check available options for each parameter using 'get_options'
