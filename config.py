@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-MODEL_PROVIDER = "gemini"
+MODEL_PROVIDER = "openai"
 
 if MODEL_PROVIDER == "openai":
     MODEL_ID = "openai/gpt-4o-mini"

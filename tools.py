@@ -591,8 +591,8 @@ def get_companies(
     ]
 
     filtered_companies = filtered_companies.dropna(subset=["summary"])
-    if len(filtered_companies) > 4:
-        filtered_companies = filtered_companies.head(4)
+    if len(filtered_companies) > 5:
+        filtered_companies = filtered_companies.head(5)
 
     with open(path, "w") as file:
         json.dump(
