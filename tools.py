@@ -93,7 +93,7 @@ def collect_financial_metrics(
 {metrics.to_markdown()}
 """
 
-        output_path = Path(output_dir) / f"{symbol}_metrics.md"
+        output_path = Path("outputs/fmp_data/metrics") / f"{symbol}_metrics.md"
         with open(output_path, "w") as f:
             f.write(report)
 
@@ -554,6 +554,284 @@ def convert_ndarray_to_list(data):
         return data
 
 
+import json
+import os
+from typing import Annotated
+
+# Define valid options for each argument
+CURRENCY_OPTIONS = [
+    "ARS",
+    "AUD",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CLP",
+    "CNY",
+    "COP",
+    "CZK",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HKD",
+    "HUF",
+    "IDR",
+    "ILA",
+    "ILS",
+    "INR",
+    "ISK",
+    "JPY",
+    "KES",
+    "KRW",
+    "LKR",
+    "MXN",
+    "MYR",
+    "NOK",
+    "NZD",
+    "PEN",
+    "PHP",
+    "PLN",
+    "QAR",
+    "RUB",
+    "SAR",
+    "SEK",
+    "SGD",
+    "THB",
+    "TRY",
+    "TWD",
+    "USD",
+    "ZAR",
+    "ZAc",
+]
+
+SECTOR_OPTIONS = [
+    "Communication Services",
+    "Consumer Discretionary",
+    "Consumer Staples",
+    "Energy",
+    "Financials",
+    "Health Care",
+    "Industrials",
+    "Information Technology",
+    "Materials",
+    "Real Estate",
+    "Utilities",
+]
+
+INDUSTRY_GROUP_OPTIONS = [
+    "Automobiles & Components",
+    "Banks",
+    "Capital Goods",
+    "Commercial & Professional Services",
+    "Consumer Durables & Apparel",
+    "Consumer Services",
+    "Diversified Financials",
+    "Energy",
+    "Food & Staples Retailing",
+    "Food, Beverage & Tobacco",
+    "Health Care Equipment & Services",
+    "Household & Personal Products",
+    "Insurance",
+    "Materials",
+    "Media & Entertainment",
+    "Pharmaceuticals, Biotechnology & Life Sciences",
+    "Real Estate",
+    "Retailing",
+    "Semiconductors & Semiconductor Equipment",
+    "Software & Services",
+    "Technology Hardware & Equipment",
+    "Telecommunication Services",
+    "Transportation",
+    "Utilities",
+]
+
+INDUSTRY_OPTIONS = [
+    "Aerospace & Defense",
+    "Air Freight & Logistics",
+    "Airlines",
+    "Auto Components",
+    "Automobiles",
+    "Banks",
+    "Beverages",
+    "Biotechnology",
+    "Building Products",
+    "Capital Markets",
+    "Chemicals",
+    "Commercial Services & Supplies",
+    "Communications Equipment",
+    "Construction & Engineering",
+    "Construction Materials",
+    "Consumer Finance",
+    "Distributors",
+    "Diversified Consumer Services",
+    "Diversified Financial Services",
+    "Diversified Telecommunication Services",
+    "Electric Utilities",
+    "Electrical Equipment",
+    "Electronic Equipment, Instruments & Components",
+    "Energy Equipment & Services",
+    "Entertainment",
+    "Equity Real Estate Investment Trusts (REITs)",
+    "Food & Staples Retailing",
+    "Food Products",
+    "Gas Utilities",
+    "Health Care Equipment & Supplies",
+    "Health Care Providers & Services",
+    "Health Care Technology",
+    "Hotels, Restaurants & Leisure",
+    "Household Durables",
+    "Household Products",
+    "IT Services",
+    "Independent Power and Renewable Electricity Producers",
+    "Industrial Conglomerates",
+    "Insurance",
+    "Interactive Media & Services",
+    "Internet & Direct Marketing Retail",
+    "Machinery",
+    "Marine",
+    "Media",
+    "Metals & Mining",
+    "Multi-Utilities",
+    "Oil, Gas & Consumable Fuels",
+    "Paper & Forest Products",
+    "Pharmaceuticals",
+    "Professional Services",
+    "Real Estate Management & Development",
+    "Road & Rail",
+    "Semiconductors & Semiconductor Equipment",
+    "Software",
+    "Specialty Retail",
+    "Technology Hardware, Storage & Peripherals",
+    "Textiles, Apparel & Luxury Goods",
+    "Thrifts & Mortgage Finance",
+    "Tobacco",
+    "Trading Companies & Distributors",
+    "Transportation Infrastructure",
+    "Water Utilities",
+]
+
+COUNTRY_OPTIONS = [
+    "Afghanistan",
+    "Anguilla",
+    "Argentina",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bangladesh",
+    "Barbados",
+    "Belgium",
+    "Belize",
+    "Bermuda",
+    "Botswana",
+    "Brazil",
+    "British Virgin Islands",
+    "Cambodia",
+    "Canada",
+    "Cayman Islands",
+    "Chile",
+    "China",
+    "Colombia",
+    "Costa Rica",
+    "Cyprus",
+    "Czech Republic",
+    "Denmark",
+    "Dominican Republic",
+    "Egypt",
+    "Estonia",
+    "Falkland Islands",
+    "Finland",
+    "France",
+    "French Guiana",
+    "Gabon",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Gibraltar",
+    "Greece",
+    "Greenland",
+    "Guernsey",
+    "Hong Kong",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Ireland",
+    "Isle of Man",
+    "Israel",
+    "Italy",
+    "Ivory Coast",
+    "Japan",
+    "Jersey",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kyrgyzstan",
+    "Latvia",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Macau",
+    "Macedonia",
+    "Malaysia",
+    "Malta",
+    "Mauritius",
+    "Mexico",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar",
+    "Namibia",
+    "Netherlands",
+    "Netherlands Antilles",
+    "New Zealand",
+    "Nigeria",
+    "Norway",
+    "Panama",
+    "Papua New Guinea",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Reunion",
+    "Romania",
+    "Russia",
+    "Saudi Arabia",
+    "Senegal",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "South Africa",
+    "South Korea",
+    "Spain",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Taiwan",
+    "Tanzania",
+    "Thailand",
+    "Turkey",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "Vietnam",
+    "Zambia",
+]
+
+MARKET_CAP_OPTIONS = [
+    "Large Cap",
+    "Mega Cap",
+    "Micro Cap",
+    "Mid Cap",
+    "Nano Cap",
+    "Small Cap",
+]
+
+
 @tool
 def get_companies(
     path: Annotated[str, "Path to save JSON file"],
@@ -578,6 +856,31 @@ def get_companies(
     Returns:
         str: Completion message
     """
+    if currency not in CURRENCY_OPTIONS:
+        raise ValueError(
+            f"Invalid currency. Available options: {', '.join(CURRENCY_OPTIONS)}"
+        )
+    if sector not in SECTOR_OPTIONS:
+        raise ValueError(
+            f"Invalid sector. Available options: {', '.join(SECTOR_OPTIONS)}"
+        )
+    if industry_group not in INDUSTRY_GROUP_OPTIONS:
+        raise ValueError(
+            f"Invalid industry group. Available options: {', '.join(INDUSTRY_GROUP_OPTIONS)}"
+        )
+    if industry not in INDUSTRY_OPTIONS:
+        raise ValueError(
+            f"Invalid industry. Available options: {', '.join(INDUSTRY_OPTIONS)}"
+        )
+    if country not in COUNTRY_OPTIONS:
+        raise ValueError(
+            f"Invalid country. Available options: {', '.join(COUNTRY_OPTIONS)}"
+        )
+    if market_cap not in MARKET_CAP_OPTIONS:
+        raise ValueError(
+            f"Invalid market cap. Available options: {', '.join(MARKET_CAP_OPTIONS)}"
+        )
+
     equities = fd.Equities()
     companies = equities.select()
 
