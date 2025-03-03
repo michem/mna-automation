@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 from smolagents import CodeAgent, LiteLLMModel
 
-from agent1 import strategist
-from agent2 import researcher
-from agent3n4 import analyst
-from agent5 import valuator
+from agent1 import managed_strategist
+from agent2 import managed_researcher
+from agent3n4 import managed_analyst
+from agent5 import managed_valuator
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import ANALYST_PROMPT, RESEARCHER_PROMPT, STRATEGY_PROMPT, VALUATION_PROMPT
 
@@ -35,10 +35,10 @@ manager = CodeAgent(
     additional_authorized_imports=["json", "os"],
     model=model,
     managed_agents=[
-        strategist,
-        researcher,
-        analyst,
-        valuator,
+        managed_strategist,
+        managed_researcher,
+        managed_analyst,
+        managed_valuator,
     ],
 )
 

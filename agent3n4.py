@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import LiteLLMModel, ToolCallingAgent
+from smolagents import LiteLLMModel, ManagedAgent, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import ANALYST_PROMPT
@@ -17,10 +17,10 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.0,
 )
+
 analyst = ToolCallingAgent(
-    name="analyst",
     tools=[
         collect_financial_metrics,
         get_company_profile,
@@ -30,6 +30,10 @@ analyst = ToolCallingAgent(
     ],
     model=model,
     max_steps=50,
+)
+managed_analyst = ManagedAgent(
+    agent=analyst,
+    name="analyst",
     description="A resilient financial analyst agent that collects comprehensive company metrics and performs valuation analysis. It processes each company independently, continues even when individual API calls fail, and ensures financial data collection proceeds for all viable companies while handling errors gracefully.",
 )
 

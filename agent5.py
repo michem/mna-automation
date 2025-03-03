@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from smolagents import LiteLLMModel, ToolCallingAgent
+from smolagents import LiteLLMModel, ManagedAgent, ToolCallingAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import VALUATION_PROMPT
@@ -14,10 +14,13 @@ model = LiteLLMModel(
     temperature=0.2,
 )
 valuator = ToolCallingAgent(
-    name="valuator",
     tools=[read_from_markdown, read_from_json, save_to_markdown],
     model=model,
     max_steps=50,
+)
+managed_valuator = ManagedAgent(
+    agent=valuator,
+    name="valuator",
     description="A comprehensive valuator agent that analyzes financial data, generates insightful valuation reports, and provides actionable acquisition recommendations. It works effectively with partial data, provides reasoned analysis even with limitations, and always produces a complete valuation report regardless of upstream data quality.",
 )
 

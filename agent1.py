@@ -1,9 +1,9 @@
 from dotenv import load_dotenv
-from smolagents import CodeAgent, LiteLLMModel
+from smolagents import CodeAgent, LiteLLMModel, ManagedAgent
 
 from config import MODEL_API_KEY, MODEL_ID
 from prompts import STRATEGY_PROMPT
-from tools import read_from_json, save_to_markdown
+from tools import human_intervention, save_to_markdown
 
 load_dotenv()
 
@@ -11,14 +11,16 @@ load_dotenv()
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.6,
+    temperature=0.0,
 )
 strategist = CodeAgent(
-    name="strategist",
-    tools=[save_to_markdown, read_from_json],
-    additional_authorized_imports=["json", "os"],
+    tools=[save_to_markdown, human_intervention],
     model=model,
-    max_steps=50,
+    max_steps=10,
+)
+managed_strategist = ManagedAgent(
+    agent=strategist,
+    name="strategist",
     description="A strategist agent that generates a comprehensive M&A strategy report based on the client's requirements and market analysis. It handles incomplete data gracefully, always produces meaningful output, and ensures the strategy report is both insightful and actionable even with limited information.",
 )
 
