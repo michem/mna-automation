@@ -85,6 +85,18 @@ For each target company, you will:
        - Final recommendations with rankings based on valuation and strategic fit
        - Save the final report to {VALUATION_REPORT_PATH} using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{VALUATION_REPORT_PATH}'.
        
+YOUR VALUATION REPORT MUST INCLUDE:
+1. Executive summary with key findings and recommendations
+2. Individual company analysis sections for each available company:
+   - Financial overview
+   - Key valuation metrics
+   - Strengths and weaknesses
+   - Strategic fit assessment
+3. Comparative analysis section
+4. Final recommendations with clear rankings
+5. Risk assessment section
+6. Next steps and implementation considerations
+
 Important: If any valuation report is missing, incomplete, or incorrect, proceed with whatever data is available and skip the problematic reports.
 
 The final report should help decision makers understand:
