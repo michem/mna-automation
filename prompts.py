@@ -23,6 +23,21 @@ Perform the following steps:
 
 Once all the necessary information is analyzed, develop a comprehensive acquisition strategy tailored to the client's needs and save it to '{STRATEGY_REPORT_PATH}' using 'save_to_markdown' tool, which expects a string parameter 'content' and a string parameter 'path' which should be set to '{STRATEGY_REPORT_PATH}'.
 
+Your strategy report should include:
+1. Executive summary (max 3 paragraphs)
+2. Target market/company analysis (including industry trends and growth potential)
+3. Strategic fit analysis (how the acquisition aligns with client goals)
+4. Acquisition approach (how to approach the acquisition given the timeline and budget)
+5. Risk assessment and mitigation strategies
+6. Implementation roadmap with clear phases
+7. Key success metrics and expected ROI
+
+If some information is missing:
+- Make reasonable assumptions based on industry standards and best practices
+- Clearly indicate what assumptions you've made
+- Provide alternative scenarios where appropriate
+- Recommend what additional information would strengthen the strategy
+
 Note: If information is missing, proceed with the available data.
 """
 
