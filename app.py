@@ -177,14 +177,32 @@ def setup_file_watcher():
 
 
 def cleanup_outputs_directory():
-    """Clean up the outputs directory and reset session state"""
+    """Clean up the outputs directory and reset session state, but preserve existing reports if analysis was completed"""
+    preserve_files = (
+        st.session_state.get("PROCESSING_STATUS", {}).get("progress", 0) >= 1.0
+    )
+
     if os.path.exists(BASE_DIR):
+        important_files = [STRATEGY_REPORT_PATH, COMPANIES_PATH, VALUATION_REPORT_PATH]
+        backup_contents = {}
+
+        if preserve_files:
+            for file_path in important_files:
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    try:
+                        with open(file_path, "r") as f:
+                            backup_contents[file_path] = f.read()
+                    except Exception as e:
+                        st.error(f"Failed to backup {file_path}. Reason: {e}")
+
         for filename in os.listdir(BASE_DIR):
             file_path = os.path.join(BASE_DIR, filename)
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
+                    if preserve_files and file_path in important_files:
+                        continue
                     os.unlink(file_path)
-                elif os.path.isdir(file_path):
+                elif os.path.isdir(file_path) and file_path != FMP_DATA_DIR:
                     shutil.rmtree(file_path)
             except Exception as e:
                 st.error(f"Failed to delete {file_path}. Reason: {e}")
@@ -192,25 +210,34 @@ def cleanup_outputs_directory():
     for directory in [BASE_DIR, FMP_DATA_DIR]:
         os.makedirs(directory, exist_ok=True)
 
-    st.session_state["PROCESSING_STATUS"] = {
-        "current_agent": None,
-        "current_task": None,
-        "start_time": None,
-        "progress": 0.0,
-        "message": "Ready to start analysis",
-        "error": None,
-        "completed_tasks": set(),
-        "total_tasks": 4,
-        "is_running": False,
-    }
+    if not preserve_files:
+        st.session_state["PROCESSING_STATUS"] = {
+            "current_agent": None,
+            "current_task": None,
+            "start_time": None,
+            "progress": 0.0,
+            "message": "Ready to start analysis",
+            "error": None,
+            "completed_tasks": set(),
+            "total_tasks": 4,
+            "is_running": False,
+        }
 
-    st.session_state["FILE_UPDATES"] = {
-        "strategy_info": None,
-        "strategy_report": None,
-        "companies": None,
-        "valuation_report": None,
-        "fmp_data": {},
-    }
+        st.session_state["FILE_UPDATES"] = {
+            "strategy_info": None,
+            "strategy_report": None,
+            "companies": None,
+            "valuation_report": None,
+            "fmp_data": {},
+        }
+
+    if preserve_files:
+        for file_path, content in backup_contents.items():
+            try:
+                with open(file_path, "w") as f:
+                    f.write(content)
+            except Exception as e:
+                st.error(f"Failed to restore {file_path}. Reason: {e}")
 
     st.session_state["ANALYSIS_THREAD_STARTED"] = False
     st.session_state["LAST_UPDATE_CHECK"] = datetime.now()
@@ -786,6 +813,9 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
+    if "INITIAL_CLEANUP_DONE" not in st.session_state:
+        st.session_state["INITIAL_CLEANUP_DONE"] = False
+
     if st.session_state.get("analysis_started", False):
         st_autorefresh(interval=15000, limit=100, key="auto-refresh")
 
@@ -840,10 +870,15 @@ def main():
         unsafe_allow_html=True,
     )
 
-    if st.session_state["STARTUP"]:
-        cleanup_outputs_directory()
+    if st.session_state["STARTUP"] and not st.session_state["INITIAL_CLEANUP_DONE"]:
+        if not (
+            os.path.exists(STRATEGY_REPORT_PATH)
+            and os.path.getsize(STRATEGY_REPORT_PATH) > 0
+        ):
+            cleanup_outputs_directory()
         setup_file_watcher()
         st.session_state["STARTUP"] = False
+        st.session_state["INITIAL_CLEANUP_DONE"] = True
 
     col1, col2, col3 = st.columns([0.25, 0.2, 0.25])
     with col2:
