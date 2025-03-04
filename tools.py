@@ -58,14 +58,12 @@ def human_intervention(
 
 @tool
 def collect_financial_metrics(
-    symbol: Annotated[str, "Company symbol to analyze"],
-    output_dir: Annotated[str, "Directory to save the output"] = "outputs/fmp_data",
+    symbol: Annotated[str, "Company symbol to analyze"]
 ) -> dict:
     """Collect key financial metrics using FinanceToolkit.
 
     Args:
         symbol: The company symbol to analyze.
-        output_dir: Directory to save the output files.
 
     Returns:
         dict: Dictionary containing financial metrics and status message.
@@ -93,7 +91,7 @@ def collect_financial_metrics(
 {metrics.to_markdown()}
 """
 
-        output_path = Path("outputs/fmp_data/metrics") / f"{symbol}_metrics.md"
+        output_path = Path("outputs/fmp_data") / f"{symbol}_metrics.md"
         with open(output_path, "w") as f:
             f.write(report)
 
