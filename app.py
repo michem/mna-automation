@@ -483,6 +483,8 @@ When is_strategy_complete is true:
         )
 
     def save_strategy_info(self) -> str:
+        """Save the collected strategy information to a JSON file"""
+        os.makedirs(BASE_DIR, exist_ok=True)
         output_path = os.path.join(BASE_DIR, "strategy_info.json")
         with open(output_path, "w") as f:
             json.dump(vars(self.collected_info), f, indent=4)
@@ -609,7 +611,7 @@ If you have trouble parsing the user's message, try to extract relevant informat
                 )
 
 
-def run_analysis_thread():
+def run_analysis_thread(strategy_info):
     """Run the analysis process in a separate thread"""
     try:
         if "PROCESSING_STATUS" not in st.session_state:
@@ -624,6 +626,12 @@ def run_analysis_thread():
                 "total_tasks": 4,
                 "is_running": False,
             }
+
+        cleanup_outputs_directory()
+
+        output_path = os.path.join(BASE_DIR, "strategy_info.json")
+        with open(output_path, "w") as f:
+            json.dump(strategy_info, f, indent=4)
 
         from run import MANAGER_PROMPT, manager
 
@@ -759,16 +767,31 @@ def display_strategy_tab():
         )
 
 
+def display_company_card(company):
+    """Display a company information card"""
+    markdown_content = f"""
+## {company['symbol']} - {company['name']}
+
+**Country:** {company['country']}
+
+**Summary:**
+{company['summary']}
+
+---
+    """
+    st.info(markdown_content)
+
+
 def display_companies_tab():
     """Display the Companies tab content"""
     companies_content = read_file_content(COMPANIES_PATH)
     if companies_content:
         try:
-
             companies_data = json.loads(companies_content)
-            st.info(json.dumps(companies_data, indent=2), language="json")
-        except:
+            for company in companies_data:
+                display_company_card(company)
 
+        except json.JSONDecodeError:
             st.info(companies_content)
     else:
         st.info(
@@ -871,11 +894,6 @@ def main():
     )
 
     if st.session_state["STARTUP"] and not st.session_state["INITIAL_CLEANUP_DONE"]:
-        if not (
-            os.path.exists(STRATEGY_REPORT_PATH)
-            and os.path.getsize(STRATEGY_REPORT_PATH) > 0
-        ):
-            cleanup_outputs_directory()
         setup_file_watcher()
         st.session_state["STARTUP"] = False
         st.session_state["INITIAL_CLEANUP_DONE"] = True
@@ -935,23 +953,24 @@ def main():
                     Stage.COMPLETE,
                 ]:
                     st.session_state["conversation_ended"] = True
-                    filename = bot.save_strategy_info()
-                    st.success(f"Strategy information has been saved to: {filename}")
                 st.rerun()
 
     elif not st.session_state["analysis_started"]:
-        st.subheader("Collected Strategy Information")
-        st.json(vars(bot.collected_info))
-
         if st.button("▶️ Generate strategy", key="generate_button", type="primary"):
             st.session_state["analysis_started"] = True
-            analysis_thread = threading.Thread(target=run_analysis_thread)
+            strategy_info = vars(bot.collected_info)
+            analysis_thread = threading.Thread(
+                target=run_analysis_thread, args=(strategy_info,)
+            )
             analysis_thread.daemon = True
             analysis_thread.start()
             st.rerun()
     else:
         if not st.session_state["ANALYSIS_THREAD_STARTED"]:
-            analysis_thread = threading.Thread(target=run_analysis_thread)
+            strategy_info = vars(bot.collected_info)
+            analysis_thread = threading.Thread(
+                target=run_analysis_thread, args=(strategy_info,)
+            )
             analysis_thread.daemon = True
             analysis_thread.start()
             st.session_state["ANALYSIS_THREAD_STARTED"] = True
