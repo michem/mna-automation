@@ -766,10 +766,10 @@ def display_companies_tab():
         try:
 
             companies_data = json.loads(companies_content)
-            st.code(json.dumps(companies_data, indent=2), language="json")
+            st.info(json.dumps(companies_data, indent=2), language="json")
         except:
 
-            st.code(companies_content)
+            st.info(companies_content)
     else:
         st.info(
             "Companies data not available yet. Please wait for the analysis to complete."
@@ -957,7 +957,7 @@ def main():
             st.session_state["ANALYSIS_THREAD_STARTED"] = True
 
         tab1, tab2, tab3, tab4 = st.tabs(
-            ["Strategy", "Companies", "Financials", "Valuation"]
+            ["Strategy", "Companies", "Financials", "Recommendations"]
         )
 
         with tab1:
