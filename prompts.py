@@ -112,7 +112,7 @@ YOUR VALUATION REPORT MUST INCLUDE:
 5. Risk assessment section
 6. Next steps and implementation considerations
 
-Important: If any valuation report is missing, incomplete, or incorrect, proceed with whatever data is available and skip the problematic reports.
+Important: If any valuation file is missing or incomplete, proceed with whatever data is available and skip the problematic files.
 
 The final report should help decision makers understand:
 - How each company performs financially

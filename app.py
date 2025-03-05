@@ -774,10 +774,11 @@ def display_company_card(company):
 
 **Country:** {company['country']}
 
+**Website:** {company['website']}
+
 **Summary:**
 {company['summary']}
 
----
     """
     st.info(markdown_content)
 
