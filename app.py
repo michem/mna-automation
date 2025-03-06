@@ -164,6 +164,9 @@ def setup_file_watcher():
     if "OBSERVER" not in st.session_state:
         st.session_state["OBSERVER"] = None
 
+    os.makedirs(BASE_DIR, exist_ok=True)
+    os.makedirs(FMP_DATA_DIR, exist_ok=True)
+
     if (
         st.session_state["OBSERVER"] is None
         or not st.session_state["OBSERVER"].is_alive()
