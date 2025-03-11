@@ -1,11 +1,12 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Annotated, Dict
 
 import financedatabase as fd
 import numpy as np
 import pandas as pd
+import yfinance as yf
 from dotenv import load_dotenv
 from financetoolkit import Toolkit
 from smolagents import tool
@@ -58,7 +59,7 @@ def human_intervention(
 
 @tool
 def collect_financial_metrics(
-    symbol: Annotated[str, "Company symbol to analyze"]
+    symbol: Annotated[str, "Company symbol to analyze"],
 ) -> dict:
     """Collect key financial metrics using FinanceToolkit.
 
@@ -102,7 +103,7 @@ def collect_financial_metrics(
 
 @tool
 def perform_valuation_analysis(
-    symbol: Annotated[str, "Company symbol to analyze"]
+    symbol: Annotated[str, "Company symbol to analyze"],
 ) -> dict:
     """Perform comprehensive valuation analysis using FinanceToolkit.
 
@@ -469,7 +470,7 @@ def save_to_markdown(
 
 @tool
 def read_from_markdown(
-    filepath: Annotated[str, "Path of Strategy Report"]
+    filepath: Annotated[str, "Path of Strategy Report"],
 ) -> Annotated[str, "Content of Strategy Report"]:
     """Read the content from a markdown file.
 
@@ -923,3 +924,136 @@ def get_names_and_summaries(path: Annotated[str, "Path to JSON file"]) -> str:
         return df.to_json(orient="records", indent=4)
     except Exception as e:
         return f"Error processing data: {str(e)}"
+
+
+def get_sp500_tickers():
+    """
+    Fetches the list of S&P 500 tickers from Wikipedia.
+
+    Returns:
+    list: List of S&P 500 tickers.
+    """
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    table = pd.read_html(url, header=0)
+    df = table[0]
+    return df["Symbol"].tolist()
+
+
+def get_nyse_tickers():
+    """
+    Fetches the list of NYSE tickers.
+
+    Returns:
+    list: List of NYSE tickers.
+    """
+    nyse_tickers_url = "https://datahub.io/core/nyse-other-listings/r/nyse-listed.csv"
+    df = pd.read_csv(nyse_tickers_url)
+    return df["ACT Symbol"].tolist()
+
+
+def find_company_tickers(nyse_tickers):
+    """
+    Finds company tickers based on market capitalization and sector and saves all the ticker info in a CSV file.
+
+    Parameters:
+    nyse_tickers (list): List of NYSE tickers.
+
+
+    Returns:
+    list: List of company tickers.
+    """
+    companies = []
+
+    for ticker in nyse_tickers:
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+
+            companies.append(info)
+
+        except Exception as e:
+            print(f"Error fetching data for ticker {ticker}: {e}")
+
+    df = pd.DataFrame(companies)
+    df.to_csv("company_tickers.csv", index=False)
+
+    return [company["symbol"] for company in companies], len(companies)
+
+
+def companies_db_info():
+    path = Path("company_db.csv")
+    df = pd.read_csv(path)
+
+    result = {}
+    for column in ["sectorKey", "industryKey"]:
+        result[column] = df[column].unique().tolist()
+    result_path = Path("company_db_info.json")
+    with result_path.open("w") as f:
+        json.dump(result, f, indent=4)
+    return result
+
+
+def clean_db():
+    path = Path("company_db.csv")
+    df = pd.read_csv(path)
+
+    df["marketCap"] = df["marketCap"].apply(lambda x: x / 1e9 if pd.notnull(x) else x)
+
+    df.dropna(how="all", inplace=True)
+
+    cleaned_path = Path("company_db.csv")
+    df.to_csv(cleaned_path, index=False)
+
+    return cleaned_path
+
+
+@tool
+def shortlist_companies(
+    sector: Annotated[str, "Company Sector"],
+    industry: Annotated[str, "Industry"],
+    market_cap_min: Annotated[float, "Minimum Market Cap"],
+    market_cap_max: Annotated[float, "Maximum Market Cap"],
+) -> pd.DataFrame:
+    """
+    Shortlists companies from company_db.csv based on the given criteria.
+
+    Args:
+        sector: Sector of the companies
+        industry: Industry of the companies
+        market_cap_min: Minimum market capitalization in billion USD
+        market_cap_max: Maximum market capitalization in billion USD
+
+    Returns:
+        pd.DataFrame: DataFrame containing the shortlisted companies.
+    """
+    df = pd.read_csv("tool_data/company_db.csv")
+
+    if sector:
+        df = df[df["sectorKey"] == sector]
+    if industry:
+        df = df[df["industryKey"] == industry]
+    if market_cap_min:
+        df = df[df["marketCap"] >= market_cap_min]
+    if market_cap_max:
+        df = df[df["marketCap"] <= market_cap_max]
+
+    columns_to_save = [
+        "longName",
+        "longBusinessSummary",
+        "symbol",
+        "marketCap",
+        "address1",
+        "city",
+        "state",
+        "zip",
+        "country",
+        "industryKey",
+        "sectorKey",
+    ]
+    df_selected = df[columns_to_save]
+    os.makedirs("outputs", exist_ok=True)
+
+    df_selected.to_csv("outputs/companies.csv", index=False)
+    df_selected.to_json("outputs/companies.json", orient="records")
+
+    return df_selected

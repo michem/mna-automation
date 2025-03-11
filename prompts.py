@@ -41,27 +41,207 @@ If some information is missing:
 Note: If information is missing, proceed with the available data.
 """
 
-RESEARCHER_PROMPT = f"""You are a researcher at a well-reputed Merger and Acquisitions consultancy firm.
+RESEARCHER_PROMPT = f"""You are a financial researcher specializing in M&A target identification at a top-tier investment bank.
 
-You will first read the strategy report at {STRATEGY_REPORT_PATH} to understand the client's requirements.
+Your mission is to identify NYSE-listed companies that match specific acquisition criteria based on sector, industry, and market capitalization parameters.
 
-Then, you will generate queries to find companies that match the target profile. The queries must contain certain parameters, namely 'currency', 'sector', 'industry_group', 'industry', 'country', and 'market_cap'. A 'path' parameter is also required, which should be set to {COMPANIES_JSON_PATH}.
+You have access to the following tools: read_from_markdown, save_to_json, and shortlist_companies
 
-To see the options available for each parameter, use the 'get_options' function. For example, get_options('sector') will return all available sectors.
+Follow these steps precisely:
 
-Based on the strategy report, identify which parameter values are most relevant to the client's requirements. Be selective and only choose parameters that align with the acquisition strategy. For example:
-- If the strategy targets specific sectors/industries, select those specific values
-- If the strategy mentions geographical focus, select appropriate countries
-- If the strategy indicates company size preferences, select appropriate market_cap ranges
+1. Use the read_from_markdown tool to analyze the acquisition strategy at path {STRATEGY_REPORT_PATH}.
 
-For parameters not specifically mentioned in the strategy, choose the most reasonable values or omit them if they would overly restrict results.
+2. Extract key acquisition parameters from the strategy report, particularly:
+   - Target sector(s)
+   - Target industry/industries
+   - Market cap range (budget constraints)
+   - Any specific business characteristics mentioned
 
-Once you've identified the most relevant parameters, use the 'get_companies' tool with those specific parameters to generate a list of companies that match the target profile. For example:
-get_companies(currency='USD', sector='Technology', country='US', path='{COMPANIES_JSON_PATH}')
+3. Select the MOST APPROPRIATE sector and industry for the shortlist_companies tool arguments.
+   You MUST choose the best matching sector and industry from the provided lists.
+   If multiple sectors/industries apply, prioritize the one that most closely aligns with the strategy.
+   
+   Convert market_cap_min and market_cap_max to billion USD (if not already).
+   IMPORTANT: Since this is an acquisition strategy, treat the client's budget as market_cap_max.
+   
+   Following are the acceptable values for sector and industry arguments:
+   ```
+   "sector":
+      "healthcare",
+      "basic-materials",
+      "financial-services",
+      "consumer-cyclical",
+      "real-estate",
+      "consumer-defensive",
+      "industrials",
+      "technology",
+      "utilities",
+      "energy",
+      "communication-services"
+   
+   "industry": 
+      "diagnostics-research",
+      "aluminum",
+      "shell-companies",
+      "asset-management",
+      "specialty-retail",
+      "reit-diversified",
+      "drug-manufacturers-general",
+      "banks-regional",
+      "beverages-brewers",
+      "auto-truck-dealerships",
+      "specialty-business-services",
+      "reit-mortgage",
+      "medical-devices",
+      "engineering-construction",
+      "business-equipment-supplies",
+      "gambling",
+      "aerospace-defense",
+      "grocery-stores",
+      "information-technology-services",
+      "reit-retail",
+      "biotechnology",
+      "farm-products",
+      "auto-parts",
+      "security-protection-services",
+      "utilities-regulated-electric",
+      "insurance-diversified",
+      "gold",
+      "apparel-retail",
+      "rental-leasing-services",
+      "utilities-diversified",
+      "oil-gas-equipment-services",
+      "insurance-property-casualty",
+      "insurance-life",
+      "silver",
+      "farm-heavy-construction-machinery",
+      "medical-care-facilities",
+      "credit-services",
+      "insurance-specialty",
+      "reit-healthcare-facilities",
+      "reit-hotel-motel",
+      "software-application",
+      "textile-manufacturing",
+      "industrial-distribution",
+      "reit-residential",
+      "insurance-brokers",
+      "specialty-chemicals",
+      "medical-instruments-supplies",
+      "airlines",
+      "oil-gas-midstream",
+      "packaging-containers",
+      "entertainment",
+      "specialty-industrial-machinery",
+      "utilities-renewable",
+      "electrical-equipment-parts",
+      "oil-gas-e-p",
+      "coking-coal",
+      "reit-specialty",
+      "health-information-services",
+      "telecom-services",
+      "computer-hardware",
+      "metal-fabrication",
+      "electronic-components",
+      "restaurants",
+      "reit-office",
+      "utilities-regulated-water",
+      "real-estate-services",
+      "building-products-equipment",
+      "electronics-computer-distribution",
+      "leisure",
+      "marine-shipping",
+      "chemicals",
+      "airports-air-services",
+      "semiconductors",
+      "software-infrastructure",
+      "education-training-services",
+      "internet-content-information",
+      "pollution-treatment-controls",
+      "utilities-regulated-gas",
+      "agricultural-inputs",
+      "real-estate-development",
+      "internet-retail",
+      "banks-diversified",
+      "consulting-services",
+      "resorts-casinos",
+      "conglomerates",
+      "recreational-vehicles",
+      "building-materials",
+      "communication-equipment",
+      "trucking",
+      "personal-services",
+      "packaged-foods",
+      "staffing-employment-services",
+      "drug-manufacturers-specialty-generic",
+      "other-industrial-metals-mining",
+      "footwear-accessories",
+      "discount-stores",
+      "scientific-technical-instruments",
+      "oil-gas-drilling",
+      "oil-gas-integrated",
+      "tobacco",
+      "thermal-coal",
+      "other-precious-metals-mining",
+      "residential-construction",
+      "medical-distribution",
+      "oil-gas-refining-marketing",
+      "uranium",
+      "travel-services",
+      "advertising-agencies",
+      "household-personal-products",
+      "lodging",
+      "healthcare-plans",
+      "steel",
+      "waste-management",
+      "paper-paper-products",
+      "mortgage-finance",
+      "railroads",
+      "reit-industrial",
+      "furnishings-fixtures-appliances",
+      "luxury-goods",
+      "auto-manufacturers",
+      "department-stores",
+      "beverages-wineries-distilleries",
+      "financial-data-stock-exchanges",
+      "semiconductor-equipment-materials",
+      "insurance-reinsurance",
+      "copper",
+      "capital-markets",
+      "integrated-freight-logistics",
+      "apparel-manufacturing",
+      "home-improvement-retail",
+      "broadcasting",
+      "publishing",
+      "real-estate-diversified",
+      "confectioners",
+      "financial-conglomerates",
+      "solar",
+      "utilities-independent-power-producers",
+      "tools-accessories",
+      "electronic-gaming-multimedia",
+      "consumer-electronics",
+      "lumber-wood-production",
+      "food-distribution",
+      "beverages-non-alcoholic"
+   ```
 
-The results will be automatically saved to {COMPANIES_JSON_PATH}.
+4. Execute the shortlist_companies tool with the selected parameters to identify potential acquisition targets.
 
-Avoid using too many restrictive parameters simultaneously as this might return too few results. Focus on the parameters that are most crucial to the strategy.
+5. Save the shortlisted companies data to {COMPANIES_JSON_PATH} using the save_to_json tool.
+   The JSON output must include for each company:
+   - Name
+   - Summary
+   - Industry
+   - Sector
+   - Symbol
+   - Market Cap
+   - Address
+   - City
+   - State
+
+6. If no companies match the criteria, save a JSON file with {{"message": "No companies found matching the specified criteria"}} to maintain process integrity.
+
+Remember: The quality of your company selection directly impacts the success of the potential acquisition. Choose precisely.
 """
 
 CRITIC_PROMPT = f"""You are a diligent critic. Your job is to indentify the companies that match the client's requirements.

@@ -10,6 +10,7 @@ from tools import (
     read_from_json,
     read_from_markdown,
     save_to_json,
+    shortlist_companies,
 )
 
 load_dotenv()
@@ -21,7 +22,8 @@ model = LiteLLMModel(
     temperature=0.2,
 )
 researcher = CodeAgent(
-    tools=[get_companies, read_from_markdown, get_options, save_to_json],
+    tools=[shortlist_companies, read_from_markdown, save_to_json],
+    additional_authorized_imports=["json", "os"],
     model=model,
     max_steps=15,
 )

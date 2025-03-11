@@ -386,8 +386,6 @@ class Stage(Enum):
     GOALS = auto()
     BUDGET = auto()
     TIMELINE = auto()
-    FINANCIAL_HEALTH = auto()
-    MARKET_POSITION = auto()
     RISKS = auto()
     COMPLETION = auto()
     COMPLETE = auto()
@@ -400,10 +398,8 @@ class MAStrategyInfo:
     goals: Optional[str] = None
     budget: Optional[str] = None
     timeline: Optional[str] = None
-    financial_health: Optional[str] = None
-    market_position: Optional[str] = None
+    market_cap: Optional[str] = None
     risks_concern: Optional[str] = None
-    risks_details: Optional[str] = None
     is_complete: bool = False
 
 
@@ -438,10 +434,8 @@ Format all responses as the following JSON structure:
         "goals": "M&A goals or null",
         "budget": "budget info or null",
         "timeline": "timeline info or null",
-        "financial_health": "financial health info of target or null",
-        "market_position": "market position info of target or null",
+        "market_cap": "preferred market cap range or null",
         "risks_concern": "risk concerns or null",
-        "risks_details": "risk details or null",
         "is_complete": false
     },
     "next_message": "your next message to user"
@@ -472,10 +466,8 @@ When is_strategy_complete is true:
                 "goals": None,
                 "budget": None,
                 "timeline": None,
-                "financial_health": None,
-                "market_position": None,
+                "market_cap": None,
                 "risks_concern": None,
-                "risks_details": None,
                 "is_complete": False,
             },
             "next_message": "Welcome! To begin our M&A strategy discussion, do you have a specific company in mind for acquisition, or are you targeting a particular market or sector?",
@@ -498,9 +490,7 @@ When is_strategy_complete is true:
             Stage.INDUSTRY: Stage.GOALS,
             Stage.GOALS: Stage.BUDGET,
             Stage.BUDGET: Stage.TIMELINE,
-            Stage.TIMELINE: Stage.FINANCIAL_HEALTH,
-            Stage.FINANCIAL_HEALTH: Stage.MARKET_POSITION,
-            Stage.MARKET_POSITION: Stage.RISKS,
+            Stage.TIMELINE: Stage.RISKS,
             Stage.RISKS: Stage.COMPLETION,
             Stage.COMPLETION: Stage.COMPLETE,
         }
