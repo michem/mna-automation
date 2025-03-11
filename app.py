@@ -763,14 +763,10 @@ def display_strategy_tab():
 def display_company_card(company):
     """Display a company information card"""
     markdown_content = f"""
-## {company['symbol']} - {company['name']}
-
-**Country:** {company['country']}
-
-**Website:** {company['website']}
+## {company['Symbol']} - {company['Name']}
 
 **Summary:**
-{company['summary']}
+{company['Summary']}
 
     """
     st.info(markdown_content)
