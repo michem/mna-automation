@@ -434,7 +434,7 @@ Format all responses as the following JSON structure:
         "goals": "M&A goals or null",
         "budget": "budget info or null",
         "timeline": "timeline info or null",
-        "market_cap": "preferred market cap range or null",
+        "market_cap": "use the same value as in the budget field or null",
         "risks_concern": "risk concerns or null",
         "is_complete": false
     },
@@ -442,7 +442,7 @@ Format all responses as the following JSON structure:
 }
 
 IMPORTANT: If you're missing crucial information, ask follow-up questions to obtain it.
-Always provide a meaningful response even with incomplete data.
+Always provide a meaningful response even with incomplete data. Note that budget and market_cap are the same. Only ask the user for budget info, and use that value for both fields.
 
 Set is_strategy_complete to true when:
 1. You have collected sufficient information about the target industry/company
