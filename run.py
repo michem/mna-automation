@@ -28,7 +28,7 @@ Exit once each of the agent has completed their task and end the conversation wi
 model = LiteLLMModel(
     model_id=MODEL_ID,
     api_key=MODEL_API_KEY,
-    temperature=0.2,
+    temperature=0.0,
 )
 manager = CodeAgent(
     tools=[],
@@ -40,6 +40,7 @@ manager = CodeAgent(
         managed_analyst,
         managed_valuator,
     ],
+    max_steps=20,
 )
 
 if __name__ == "__main__":

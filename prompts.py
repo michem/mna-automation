@@ -228,7 +228,7 @@ Follow these steps precisely:
 4. Execute the shortlist_companies tool with the selected parameters to identify potential acquisition targets.
 
 5. Save the shortlisted companies data to {COMPANIES_JSON_PATH} using the save_to_json tool.
-   The JSON output must include for each company the following fields:
+   The JSON output must include for each company the following keys:
    - name
    - summary
    - industry

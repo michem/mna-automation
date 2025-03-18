@@ -763,10 +763,10 @@ def display_strategy_tab():
 def display_company_card(company):
     """Display a company information card"""
     markdown_content = f"""
-## {company['symbol']} - {company['name']}
+## {company.get('symbol', 'N/A')} - {company.get('name', 'N/A')}
 
 **Summary:**
-{company['summary']}
+{company.get('summary', 'No summary available')}
 
     """
     st.info(markdown_content)
